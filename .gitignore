@@ -1,0 +1,15 @@
+# Ignore everything
+* _pycache__/
+C:/Development/.venv/Scripts/Python_Scripts/AirPros/
+C:/Development/.venv/Scripts/Python_Scripts/Archive/
+C:/Development/.venv/Scripts/Python_Scripts/Docker/
+C:/Development/.venv/Scripts/Python_Scripts/UrbanScienceScraper/
+C:/Development/.venv/Scripts/Python_Scripts/Web_Scraping/
+
+# But not these!
+# !/src/
+# !/src/**
+
+# Optional: allow specific files in root
+# !.gitignore
+# !README.md
