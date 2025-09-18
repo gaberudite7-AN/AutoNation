@@ -16,7 +16,7 @@ conn = snowflake.connector.connect(
 # Create a cursor object
 cur = conn.cursor()
 query = """
-select * from QA_AN_DW.BASE_URBAN_SCIENCE.DAILY_MONTH_TO_DATE_SALES where
+select top 1000 * from QA_AN_DW.BASE_URBAN_SCIENCE.DAILY_MONTH_TO_DATE_SALES where
 filedate = '2025-08-11'
 """
 # Execute and fetch into a DataFrame
