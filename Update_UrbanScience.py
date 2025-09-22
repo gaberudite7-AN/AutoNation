@@ -59,7 +59,7 @@ def Update_Daily_UrbanScience():
 
     # Setup Chrome options
     chrome_options = uc.ChromeOptions()
-    chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--headless")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--no-sandbox")
@@ -112,12 +112,25 @@ def Update_Daily_UrbanScience():
         time.sleep(5)
 
         # Wait for file checkbox
-        checkbox = WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, f"input[id*='{filename}']"))
+        # checkbox = WebDriverWait(driver, 15).until(
+        #     EC.presence_of_element_located((By.CSS_SELECTOR, f"input[id*='{filename}']"))
+        # )
+        # checkbox.click()
+        # print(f"Clicked checkbox for file: {filename}")
+        # time.sleep(5)
+
+        # Wait for the row containing the filename
+        row = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located(
+                (By.XPATH, f"//tr[.//div[@class='table-name' and normalize-space(text())='{filename}']]")
+            )
         )
+
+        # Inside that row, find the checkbox and click it
+        checkbox = row.find_element(By.XPATH, ".//input[@type='checkbox']")
         checkbox.click()
-        print(f"Clicked checkbox for file: {filename}")
-        time.sleep(5)
+        print(f"{filename} clicked...")
+        time.sleep(2)
 
         # Click download
         download_button = WebDriverWait(driver, 10).until(
@@ -125,7 +138,7 @@ def Update_Daily_UrbanScience():
         )
         download_button.click()
         print(f"Download button clicked. Waiting for file to download...")
-        time.sleep(45)
+        time.sleep(30)
 
         # Move latest file to destination folder with adjusted name
         source_file = os.path.join(downloads_folder, filename)
@@ -316,7 +329,7 @@ def Refresh_MarketShare_Excels():
 #run function
 if __name__ == '__main__':
 
-    # Update_Historicals()    
+    Update_Historicals()    
     Update_Daily_UrbanScience()
     # Append_Cutoff_Month()
     # Update_PriorWeek()
