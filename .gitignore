@@ -1,7 +1,6 @@
 # Ignore everything
 __pycache__/
 AirPros/
-Archive/
 Docker/
 UrbanScienceScraper/
 Web_Scraping/
