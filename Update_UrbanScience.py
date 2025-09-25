@@ -1,5 +1,4 @@
 # %%
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -9,15 +8,10 @@ from datetime import datetime, timedelta
 import shutil
 import os
 import traceback
-import win32com.client
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
-from office365.sharepoint.client_context import ClientContext
-from office365.runtime.auth.authentication_context import AuthenticationContext
 from openpyxl import load_workbook
-import io
 import xlwings as xw
 
 
@@ -111,14 +105,6 @@ def Update_Daily_UrbanScience():
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "signIn"))).click()
         time.sleep(5)
 
-        # Wait for file checkbox
-        # checkbox = WebDriverWait(driver, 15).until(
-        #     EC.presence_of_element_located((By.CSS_SELECTOR, f"input[id*='{filename}']"))
-        # )
-        # checkbox.click()
-        # print(f"Clicked checkbox for file: {filename}")
-        # time.sleep(5)
-
         # Wait for the row containing the filename
         row = WebDriverWait(driver, 15).until(
             EC.presence_of_element_located(
@@ -158,13 +144,18 @@ def Update_Daily_UrbanScience():
         if now.weekday() == 2: # if its wednesday...process the make file
             print("Day is wednesday..downloading make file")            
             
-            # Wait for file checkbox
-            checkbox = WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, f"input[id*='{filename}']"))
+            # Wait for the row containing the filename
+            row = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, f"//tr[.//div[@class='table-name' and normalize-space(text())='{filename}']]")
+                )
             )
+
+            # Inside that row, find the checkbox and click it
+            checkbox = row.find_element(By.XPATH, ".//input[@type='checkbox']")
             checkbox.click()
-            print(f"Clicked checkbox for file: {filename}")
-            time.sleep(5)
+            print(f"{filename} clicked...")
+            time.sleep(2)
 
             # Click download
             download_button = WebDriverWait(driver, 10).until(
@@ -213,43 +204,6 @@ def clean_store(val):
     except:
         return val  # If it can't convert, keep original
 
-def Append_Cutoff_Month():
-
-    #---------------------------------Load files to df--------------------------------------------------
-
-    # File paths
-    file_path = r"W:\Corporate\Inventory\Urban Science\AutoNation_SalesFile_NationalSales.txt"
-    file_path2 = r"W:\Corporate\Inventory\Urban Science\Historics\AutoNation_SalesFile_NationalSales_20250731.txt"
-
-    # Load files
-
-    df_curr = pd.read_csv(file_path, delimiter=',', quotechar='"', encoding='utf-8') 
-
-    df_hist = pd.read_csv(file_path2, delimiter=',', quotechar='"', encoding='utf-8')
-
-    print("Files loaded")
-
-    #---------------------------------Transformation--------------------------------------------------
-    print("Transformation ongoing")
-    df_filtered = df_hist[(df_hist['SALE_MONTH'].isin([5])) & (df_hist['SALE_YEAR'].isin([2025, 2024]))]
-
-
-    df_combined = pd.concat([df_curr, df_filtered], ignore_index=True)
-
-    df_combined['AN_Store'] = df_combined['AN_Store'].apply(clean_store)
-
-    print(df_combined)
-
-    #---------------------------------Save output file--------------------------------------------------
-    print("Saving file. Please wait")
-    output_path = fr"W:\Corporate\Inventory\Urban Science\AutoNation_SalesFile_NationalSales.txt"
-
-    df_combined.to_csv(output_path, sep=',', index=False, encoding='utf-8-sig')
-
-    print(f"File savedat: {output_path}")
-    
-    return
-
 def Update_Historicals():
     now = datetime.now()
     if now.weekday() == 2:
@@ -261,36 +215,6 @@ def Update_Historicals():
         print(f"todays date is {now.strftime('%A')}, so we update ONLY regular file")
         Move_Current_to_Historics()
     
-    return
-
-def Update_PriorWeek():
-         
-    # Define the directory to search
-    directory1 = r"W:\Corporate\Inventory\Urban Science\Excel_Update"
-    directory2 = r'W:\Corporate\Inventory\Urban Science\Historics'  # Change this to your target directory
-
-
-    # Calculate the date 7 days prior to today
-    target_date = (datetime.today() - timedelta(days=7)).strftime('%Y%m%d')
-
-    # Construct the expected filename
-    target_filename = f'AutoNation_SalesFile_NationalSales_{target_date}.txt'
-    print(f"Targeting last week file named: {target_filename}")
-
-    # Define the destination filename
-    destination_filename = 'AutoNation_SalesFile_NationalSales_PriorWeek.txt'
-
-    # Full paths
-    source_path = os.path.join(directory2, target_filename)
-    destination_path = os.path.join(directory1, destination_filename)
-
-    # Check if the target file exists and copy it
-    if os.path.exists(source_path):
-        shutil.copy(source_path, destination_path)
-        print(f"Copied {source_path} to {destination_path}")
-    else:
-        print(f"File {target_filename} not found in directory {directory1}, we have a gap in our historical, last week's excel will use whatever was in already.")
-
     return
 
 def Refresh_MarketShare_Excels():
@@ -331,7 +255,5 @@ if __name__ == '__main__':
 
     Update_Historicals()    
     Update_Daily_UrbanScience()
-    # Append_Cutoff_Month()
-    # Update_PriorWeek()
     # Refresh_MarketShare_Excels()
 # %%
