@@ -103,7 +103,7 @@ def Update_Daily_UrbanScience():
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "inputUsername"))).send_keys(username)
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "password"))).send_keys(password)
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "signIn"))).click()
-        time.sleep(5)
+        time.sleep(10)
 
         # Wait for the row containing the filename
         row = WebDriverWait(driver, 15).until(
@@ -116,7 +116,7 @@ def Update_Daily_UrbanScience():
         checkbox = row.find_element(By.XPATH, ".//input[@type='checkbox']")
         checkbox.click()
         print(f"{filename} clicked...")
-        time.sleep(2)
+        time.sleep(5)
 
         # Click download
         download_button = WebDriverWait(driver, 10).until(
@@ -124,7 +124,7 @@ def Update_Daily_UrbanScience():
         )
         download_button.click()
         print(f"Download button clicked. Waiting for file to download...")
-        time.sleep(30)
+        time.sleep(25)
 
         # Move latest file to destination folder with adjusted name
         source_file = os.path.join(downloads_folder, filename)
@@ -163,7 +163,7 @@ def Update_Daily_UrbanScience():
             )
             download_button.click()
             print(f"Download button clicked. Waiting for file to download...")
-            time.sleep(60)            
+            time.sleep(25)            
 
             filename = "AutoNation_SalesFile_NationalSales_Make.txt"
 

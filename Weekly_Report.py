@@ -14,6 +14,15 @@ import psutil
 warnings.filterwarnings("ignore", category=UserWarning, message=".*pandas only supports SQLAlchemy.*")
 from dateutil.relativedelta import relativedelta
 
+# Selenium packages
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+import undetected_chromedriver as uc
+import traceback
+
 
 # Run with low priority ( will allow script to run in background and yield CPU to other apps)
 try:
@@ -56,6 +65,166 @@ def Process_Daily_Sales_File():
 ################################################################################################################################
 '''CONNECT SQL QUERIES TO PANDAS'''
 ################################################################################################################################
+
+def Download_PWB():
+# Function to download the latest Referall Sharepoint to local
+
+    # Setup Chrome options
+    chrome_options = uc.ChromeOptions()
+    # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
+
+    # Paths
+    chrome_driver_path = r"C:\Development\Chrome_Driver\chromedriver-win64\chromedriver.exe"
+    downloads_folder = r"C:\Users\BesadaG\Downloads"
+    destination_folder = r"W:\Corporate\Inventory\Weekly Reporting Package\PWB_Data"
+    PWB_Link = "https://pricingworkbench.autonation.com/"
+
+    # Format today's date as YYYY-MM-DD
+    today_str = datetime.today().strftime("%Y-%m-%d")
+    filename = f"PW_{today_str}.xlsx"
+
+    # Start browser
+    try:
+        driver = uc.Chrome(
+            driver_executable_path=chrome_driver_path,
+            options=chrome_options,
+            use_subprocess=True
+        )
+
+        actions = ActionChains(driver)
+        driver.set_page_load_timeout(20)
+        driver.get(PWB_Link)
+
+        # Define wait AFTER driver is initialized
+        wait = WebDriverWait(driver, 20)
+        time.sleep(5)
+
+        Email = "besadag@autonation.com"
+
+        time.sleep(1)
+        
+        # Step 1: Enter email
+        email_input = wait.until(EC.presence_of_element_located((By.ID, "i0116")))
+        email_input.send_keys(Email)
+        time.sleep(2)
+
+        # Click the Submit button
+        submit_button = wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9")))
+        submit_button.click()
+        time.sleep(3)
+
+        # Click the "Continue" button after entering email or password
+        continue_button = wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9")))
+        continue_button.click()
+        time.sleep(15) # wait for site data to load
+
+        # Click the "Yes" button on the "Stay signed in?" prompt
+        # yes_button = wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9")))
+        # yes_button.click()
+        # time.sleep(3)
+
+        # Update the XPath to the new value
+        download_button = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((By.XPATH, '/html/body/app-root/div/div/main/app-home/div/app-chart/img'))
+        )
+        download_button.click()
+        time.sleep(15)  # Wait for download to complete
+
+        # Move latest file to destination folder with adjusted name
+        source_file = os.path.join(downloads_folder, filename)
+        destination_file = os.path.join(destination_folder, filename)
+
+        shutil.move(source_file, destination_file)
+        print(f"Successfully moved file to: {destination_file}")
+
+    except Exception as e:
+        error_log_path = os.path.join(destination_folder, "PWB_error_log.txt")
+        with open(error_log_path, "w") as f:
+            f.write(traceback.format_exc())
+        print(f"An error occurred. Details written to {error_log_path}")
+
+    finally:
+        if 'driver' in locals():
+            def safe_del(self):
+                try:
+                    self.quit()
+                except Exception:
+                    pass  # Silently ignore all errors
+            uc.Chrome.__del__ = safe_del
+        
+        return
+
+def Update_PWB_Data():
+    
+    PWB_Data_folder = r"W:\Corporate\Inventory\Weekly Reporting Package\PWB_Data"
+    
+    # Format today's date as YYYY-MM-DD
+    today_str = datetime.today().strftime("%Y-%m-%d")
+    filename = f"PW_{today_str}.xlsx"    
+    
+    # Latest Data file
+    latest_data = os.path.join(PWB_Data_folder, filename)
+    PWB_file = r"W:\Corporate\Inventory\Weekly Reporting Package\Pricing_Workbench_Analysis_Used.xlsx"
+
+    # Open with xlwings
+    app = xw.App(visible=True)
+    PWB_wb = app.books.open(PWB_file)
+    latest_data_wb = app.books.open(latest_data)
+
+    # Go to date column of PWB file and remove earliest date
+    '''Update PWB'''
+    PWB_sht = PWB_wb.sheets['Pricing_WB']
+    # Read existing data into a DataFrame
+    data_range = PWB_sht.range('A1').expand()
+    PWB_df = data_range.options(pd.DataFrame, header=1, index=False).value
+
+    # Find the earliest date
+    PWB_df['Date'] = pd.to_datetime(PWB_df['Date'])
+    earliest_date = PWB_df['Date'].min()
+
+    # Read latest file data into dataframe
+    latest_data_sht = latest_data_wb.sheets['ag-grid']
+    data_range = latest_data_sht.range('A2').expand('down').resize(None, 64)
+    latest_PWB_df = data_range.options(pd.DataFrame, header=1, index=False).value
+
+    # Ensure RN is a column, not an index
+    PWB_df = PWB_df.reset_index()
+    latest_PWB_df = latest_PWB_df.reset_index()
+
+    # Filter out rows with the earliest date
+    filtered_PWB_Data = PWB_df[PWB_df['Date'] > earliest_date]
+
+    # Add Current Date to current Allocation Dataset
+    today = datetime.today()
+    latest_PWB_df['Date'] = pd.to_datetime(today)
+
+    # Append new data
+    combined_df = pd.concat([filtered_PWB_Data, latest_PWB_df], ignore_index=True)
+
+    # Drop the 'index' column if it exists
+    if 'index' in combined_df.columns:
+        combined_df = combined_df.drop('index', axis=1)
+
+    # Convert date to not include time values
+    combined_df['Date'] = combined_df['Date'].dt.date
+
+    # Replace PWB worksheet with updated data
+    PWB_sht.clear_contents()
+    PWB_sht.range('A1').options(index=False).value = combined_df
+
+    # Save and close the excel document and any other open instances
+    PWB_wb.save(PWB_file)
+    if PWB_wb:
+        PWB_wb.close()
+    if app:
+        app.quit()
+
+    return
 
 def Weekly_Data_Update():
 
@@ -1398,4 +1567,6 @@ WHERE AccountingMonth = '{Current_accounting_month}'
 if __name__ == '__main__':
 
     Process_Daily_Sales_File()    
+    #Download_PWB()
+    #Update_PWB_Data()
     Weekly_Data_Update()

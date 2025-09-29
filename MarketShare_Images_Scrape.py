@@ -155,7 +155,7 @@ def export_markets_to_pdf(driver, wait, page_label):
             ok_button = wait.until(EC.element_to_be_clickable((By.ID, "okButton")))
             ok_button.click()
             # wait for file to download
-            time.sleep(35)
+            time.sleep(45)
 
             # shutil to move download file to correct path.
             # Move latest file to destination folder with adjusted name
