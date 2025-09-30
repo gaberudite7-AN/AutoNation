@@ -219,32 +219,26 @@ def Update_Historicals():
 
 def Refresh_MarketShare_Excels():
 
-
     # Prior Week File
-    UrbanScience_PriorWeek = r'W:\Corporate\Inventory\Urban Science\Excel_Update\DailyMarketShare_PriorWeek.xlsm'
-    UrbanScience_Main = r'W:\Corporate\Inventory\Urban Science\Excel_Update\DailyMarketShare_August.xlsm'
+    UrbanScience_Main = r"W:\Corporate\Inventory\Urban Science\Excel_Update\MarketShare_FOR INTERNAL VARIABLE OPS ONLY.xlsm"
 
     app = xw.App(visible=True) 
-    UrbanScience_PriorWeek_wb = app.books.open(UrbanScience_PriorWeek)
-    UrbanScience_Main_wb = app.books.open(UrbanScience_Main)   
-    
-    # Run Macros on both files
-    Run_Macro = UrbanScience_PriorWeek_wb.macro("Refresh_All")
+    UrbanScience_Main_wb = app.books.open(UrbanScience_Main)
+
+    # Run Macro to refresh all data connections
+    Run_Macro = UrbanScience_Main_wb.macro("Refresh_File")
     Run_Macro()
-    time.sleep(5)
-    Run_Macro2 = UrbanScience_Main_wb.macro("Refresh_All")
-    Run_Macro2()
-    
+
     # Save and close the excel document(s)
     # Save both workbooks
-    UrbanScience_PriorWeek_wb.save()
+    UrbanScience_Main_wb.save()
     time.sleep(5)
     UrbanScience_Main_wb.save()
     time.sleep(5)
 
     # Close workbooks and quit excel app
-    if UrbanScience_PriorWeek_wb:
-        UrbanScience_PriorWeek_wb.close()
+    if UrbanScience_Main_wb:
+        UrbanScience_Main_wb.close()
     if app:
         app.quit()
 
@@ -255,5 +249,5 @@ if __name__ == '__main__':
 
     Update_Historicals()    
     Update_Daily_UrbanScience()
-    # Refresh_MarketShare_Excels()
+    Refresh_MarketShare_Excels()
 # %%

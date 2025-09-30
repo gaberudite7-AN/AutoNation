@@ -20,7 +20,7 @@ class AllocationTracker:
         self.month_to_query = None
 
         # Excel files
-        self.allocation_tracker_file = os.path.join(base_path, "Allocation_Tracker2.xlsm")
+        self.allocation_tracker_file = os.path.join(base_path, "Allocation_Tracker.xlsm")
         self.dynamic_sor_file = r'W:\Corporate\Management Reporting Shared\Dynamic SOR.xlsb'
 
     def process_daily_sales_file(self):
@@ -148,1105 +148,404 @@ class AllocationTracker:
         history_tab.range('A2:J500000').clear_contents()
         history_tab.range('A2').options(index=False, header=False).value = updated_df
 
-if __name__ == "__main__":
+    def run_allocation_tracker(self):
+        self.calculate_dates()
 
-    base_path = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Allocation_Tracker'
-    AllocationTracker = AllocationTracker(base_path)
-    AllocationTracker.process_daily_sales_file()
-    AllocationTracker.calculate_dates()
 
-    # NDD queries
-    NDD_query = f"""
-SELECT
-*
-
-FROM(
-
-SELECT					
-CONVERT(VARCHAR, AccountingMonth,101) AS AccountingMonth,								
-hyperion,					
-StoreName,					
-CASE
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
-	THEN 'CDJR'
-	WHEN Make in ('FORD', 'LINCOLN')
-	THEN 'Ford'
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
-	THEN 'GM'
-	WHEN Make in ('HYUNDAI', 'GENESIS')
-	THEN 'Hyundai'
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
-	THEN 'JLR'
-	Else Make
-	END AS Brand,
---AllocationGroup,
-SUM(CASE WHEN Type = 'Inv' THEN QTY ELSE 0 END) AS Inv,					
-SUM(CASE WHEN Type = 'Sales' THEN QTY ELSE 0 END) AS Sales					
-					
-FROM(					
-					
-SELECT					
-AccountingMonth,									
-hyperion,					
-StoreName,					
-Make,
---AllocationGroup,
-'Inv' AS Type,					
-SUM(InventoryCount) AS QTY					
-					
-FROM					
-NDDUsers.vInventoryMonthEnd					
-					
-WHERE									
-AccountingMonth = '{AllocationTracker.beginning_of_month}'
-AND Department = '300'		
---AND Make = 'Mercedes-Benz'
-					
-GROUP BY					
-AccountingMonth,									
-hyperion,					
-StoreName,					
-Make
---AllocationGroup
-					
-HAVING 					
-SUM(InventoryCount) <> 0					
-					
-UNION ALL					
-					
-SELECT					
-AccountingMonth,								
-StoreHyperion,					
-StoreName,					
-VehicleMakeName,
---AllocationGroup,
-'Sales' AS Type,					
-SUM(VehicleSoldCount) AS QTY					
-					
-FROM					
-NDDUsers.vSalesDetail_Vehicle					
-					
-WHERE										
-AccountingMonth = '{AllocationTracker.beginning_of_month}'			
-AND DepartmentName = 'NEW'					
-AND RecordSource = 'Accounting'
---AND VehicleMakeName = 'Mercedes-Benz'
-			
-					
-GROUP BY					
-AccountingMonth,								
-StoreHyperion,					
-StoreName,					
-VehicleMakeName
---AllocationGroup
-					
-HAVING 					
-SUM(VehicleSoldCount) <> 0					
-					
-) AS SQ					
-
-WHERE
-Make IS NOT NULL
-	
-GROUP BY					
-AccountingMonth,									
-hyperion,					
-StoreName,					
---AllocationGroup,
-CASE
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
-	THEN 'CDJR'
-	WHEN Make in ('FORD', 'LINCOLN')
-	THEN 'Ford'
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
-	THEN 'GM'
-	WHEN Make in ('HYUNDAI', 'GENESIS')
-	THEN 'Hyundai'
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
-	THEN 'JLR'
-	Else Make
-	END
-
-) SQ2
-
-WHERE
-Inv >5
-    """
-
-    NDD_EV_query = f"""
-SELECT					
-CONVERT(VARCHAR, AccountingMonth,101) AS AccountingMonth,								
-hyperion,					
-StoreName,					
-CASE
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
-	THEN 'CDJR'
-	WHEN Make in ('FORD', 'LINCOLN')
-	THEN 'Ford'
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
-	THEN 'GM'
-	WHEN Make in ('HYUNDAI', 'GENESIS')
-	THEN 'Hyundai'
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
-	THEN 'JLR'
-	Else Make
-	END AS Brand,
---AllocationGroup,
-SUM(CASE WHEN Type = 'Inv' THEN QTY ELSE 0 END) AS Inv,					
-SUM(CASE WHEN Type = 'Sales' THEN QTY ELSE 0 END) AS Sales					
-					
-FROM(					
-					
-SELECT					
-AccountingMonth,									
-hyperion,					
-StoreName,					
-Make,
---AllocationGroup,
-'Inv' AS Type,					
-SUM(InventoryCount) AS QTY					
-					
-FROM					
-NDDUsers.vInventoryMonthEnd					
-					
-WHERE									
-AccountingMonth = '{AllocationTracker.beginning_of_month}'			
-AND Department = '300'		
-AND FuelType = 'Electric Fuel System'
---AND Make = 'Mercedes-Benz'
-					
-GROUP BY					
-AccountingMonth,									
-hyperion,					
-StoreName,					
-Make
---AllocationGroup
-					
-HAVING 					
-SUM(InventoryCount) <> 0					
-					
-UNION ALL					
-					
-SELECT					
-AccountingMonth,								
-StoreHyperion,					
-StoreName,					
-VehicleMakeName,
---AllocationGroup,
-'Sales' AS Type,					
-SUM(VehicleSoldCount) AS QTY					
-					
-FROM					
-NDDUsers.vSalesDetail_Vehicle					
-					
-WHERE										
-AccountingMonth = '{AllocationTracker.beginning_of_month}'			
-AND DepartmentName = 'NEW'					
-AND RecordSource = 'Accounting'
-AND VehicleFuelType = 'Electric Fuel System'
---AND VehicleMakeName = 'Mercedes-Benz'
-			
-					
-GROUP BY					
-AccountingMonth,								
-StoreHyperion,					
-StoreName,					
-VehicleMakeName
---AllocationGroup
-					
-HAVING 					
-SUM(VehicleSoldCount) <> 0					
-					
-) AS Subquery					
-
-WHERE
-Make IS NOT NULL
-	
-GROUP BY					
-AccountingMonth,									
-hyperion,					
-StoreName,					
---AllocationGroup,
-CASE
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
-	THEN 'CDJR'
-	WHEN Make in ('FORD', 'LINCOLN')
-	THEN 'Ford'
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
-	THEN 'GM'
-	WHEN Make in ('HYUNDAI', 'GENESIS')
-	THEN 'Hyundai'
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
-	THEN 'JLR'
-	Else Make
-	END    
-"""
-
-    NDD_EV_Flag_query = """
+        # NDD queries
+        NDD_query = f"""
     SELECT
-    AllocationGroup,
+    *
+
+    FROM(
+
+    SELECT					
+    CONVERT(VARCHAR, AccountingMonth,101) AS AccountingMonth,								
+    hyperion,					
+    StoreName,					
     CASE
-        WHEN FuelType = 'Electric Fuel System'
-        THEN 'EV'
-        ELSE 'ICE'
-    END AS EV_Flag
-
-
-
-    FROM
-    NDDUsers.vInventoryMonthEnd
+        WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
+        THEN 'CDJR'
+        WHEN Make in ('FORD', 'LINCOLN')
+        THEN 'Ford'
+        WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+        THEN 'GM'
+        WHEN Make in ('HYUNDAI', 'GENESIS')
+        THEN 'Hyundai'
+        WHEN Make in ('JAGUAR', 'LAND ROVER')
+        THEN 'JLR'
+        Else Make
+        END AS Brand,
+    --AllocationGroup,
+    SUM(CASE WHEN Type = 'Inv' THEN QTY ELSE 0 END) AS Inv,					
+    SUM(CASE WHEN Type = 'Sales' THEN QTY ELSE 0 END) AS Sales					
+                        
+    FROM(					
+                        
+    SELECT					
+    AccountingMonth,									
+    hyperion,					
+    StoreName,					
+    Make,
+    --AllocationGroup,
+    'Inv' AS Type,					
+    SUM(InventoryCount) AS QTY					
+                        
+    FROM					
+    NDDUsers.vInventoryMonthEnd					
+                        
+    WHERE									
+    AccountingMonth = '{AllocationTracker.beginning_of_month}'
+    AND Department = '300'		
+    --AND Make = 'Mercedes-Benz'
+                        
+    GROUP BY					
+    AccountingMonth,									
+    hyperion,					
+    StoreName,					
+    Make
+    --AllocationGroup
+                        
+    HAVING 					
+    SUM(InventoryCount) <> 0					
+                        
+    UNION ALL					
+                        
+    SELECT					
+    AccountingMonth,								
+    StoreHyperion,					
+    StoreName,					
+    VehicleMakeName,
+    --AllocationGroup,
+    'Sales' AS Type,					
+    SUM(VehicleSoldCount) AS QTY					
+                        
+    FROM					
+    NDDUsers.vSalesDetail_Vehicle					
+                        
+    WHERE										
+    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AND DepartmentName = 'NEW'					
+    AND RecordSource = 'Accounting'
+    --AND VehicleMakeName = 'Mercedes-Benz'
+                
+                        
+    GROUP BY					
+    AccountingMonth,								
+    StoreHyperion,					
+    StoreName,					
+    VehicleMakeName
+    --AllocationGroup
+                        
+    HAVING 					
+    SUM(VehicleSoldCount) <> 0					
+                        
+    ) AS SQ					
 
     WHERE
-    AccountingMonth > = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-6, 0)
-    and Department = 300
-
-    GROUP BY
-    AllocationGroup,
+    Make IS NOT NULL
+        
+    GROUP BY					
+    AccountingMonth,									
+    hyperion,					
+    StoreName,					
+    --AllocationGroup,
     CASE
-        WHEN FuelType = 'Electric Fuel System'
-        THEN 'EV'
-        ELSE 'ICE'
-    END
-    """
+        WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
+        THEN 'CDJR'
+        WHEN Make in ('FORD', 'LINCOLN')
+        THEN 'Ford'
+        WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+        THEN 'GM'
+        WHEN Make in ('HYUNDAI', 'GENESIS')
+        THEN 'Hyundai'
+        WHEN Make in ('JAGUAR', 'LAND ROVER')
+        THEN 'JLR'
+        Else Make
+        END
 
-    NDD_query_3 = f"""
-SELECT					
-CONVERT(VARCHAR, AccountingMonth,101) AS AccountingMonth,								
---hyperion,					
---StoreName,					
-CASE
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
-	THEN 'CDJR'
-	WHEN Make in ('FORD', 'LINCOLN')
-	THEN 'Ford'
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
-	THEN 'GM'
-	WHEN Make in ('HYUNDAI', 'GENESIS')
-	THEN 'Hyundai'
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
-	THEN 'JLR'
-	Else Make
-	END AS Brand,
---AllocationGroup,
-SUM(CASE WHEN Type = 'Inv' THEN QTY ELSE 0 END) AS Inv,					
-SUM(CASE WHEN Type = 'Sales' THEN QTY ELSE 0 END) AS Sales					
-					
-FROM(					
-					
-SELECT					
-AccountingMonth,									
---hyperion,					
---StoreName,					
-Make,
---AllocationGroup,
-'Inv' AS Type,					
-SUM(InventoryCount) AS QTY					
-					
-FROM					
-NDDUsers.vInventoryMonthEnd					
-					
-WHERE									
-AccountingMonth = '{AllocationTracker.beginning_of_month}'			
-AND Department = '300'		
---AND Make = 'Mercedes-Benz'
-					
-GROUP BY					
-AccountingMonth,									
---hyperion,					
---StoreName,					
-Make
---AllocationGroup
-					
-HAVING 					
-SUM(InventoryCount) <> 0					
-					
-UNION ALL					
-					
-SELECT					
-AccountingMonth,								
---StoreHyperion,					
---StoreName,					
-VehicleMakeName,
---AllocationGroup,
-'Sales' AS Type,					
-SUM(VehicleSoldCount) AS QTY					
-					
-FROM					
-NDDUsers.vSalesDetail_Vehicle					
-					
-WHERE										
-AccountingMonth = '{AllocationTracker.beginning_of_month}'			
-AND DepartmentName = 'NEW'					
-AND RecordSource = 'Accounting'
---AND VehicleMakeName = 'Mercedes-Benz'
-			
-					
-GROUP BY					
-AccountingMonth,								
---StoreHyperion,					
---StoreName,					
-VehicleMakeName
---AllocationGroup
-					
-HAVING 					
-SUM(VehicleSoldCount) <> 0					
-					
-) AS Subquery					
+    ) SQ2
 
-WHERE
-Make IS NOT NULL
-	
-GROUP BY					
-AccountingMonth,									
---hyperion,					
---StoreName,					
---AllocationGroup,
-CASE
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
-	THEN 'CDJR'
-	WHEN Make in ('FORD', 'LINCOLN')
-	THEN 'Ford'
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
-	THEN 'GM'
-	WHEN Make in ('HYUNDAI', 'GENESIS')
-	THEN 'Hyundai'
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
-	THEN 'JLR'
-	Else Make
-	END
-    """
-    
-   # Run NDD queries
-    ndd_queries = {
-        "NDD_df": NDD_query,    
-  # Replace with actual query
-        "NDD_EV_df": NDD_EV_query,
-        "NDD_df_4": NDD_EV_Flag_query,
-        "NDD_df_3": NDD_query_3
-    }
-    ndd_results = AllocationTracker.run_NDD_sql_queries(ndd_queries)
-
-    # SSPR queries
-    SSPR_query = f"""
-SELECT
---Year,
---Month,
-ParentBrand,
-Segment,
-Hyperion,
-EarnedM1,
-CASE 
-	WHEN commitM1 > earnedM1 
-	THEN earnedM1 
-	ELSE commitM1 END AS CommitM1
-
-FROM(
-
-SELECT --ParentBrand
- 
-Year,
- 
-Month,
- 
-Hyperion,
- 
-CASE
- 
-	WHEN Make IN ('CHRYSLER','DODGE','JEEP','RAM', 'FIAT', 'FORD','LINCOLN','BUICK','CADILLAC','CHEVROLET','GMC')
- 
-	THEN 'Domestic'
- 
-	WHEN Make IN ('ACURA','HONDA','GENESIS','HYUNDAI','INFINITI', 'MAZDA', 'NISSAN','SUBARU','TOYOTA','VOLKSWAGEN', 'VOLVO')
- 
-	THEN 'Import'
- 
-	WHEN Make IN ('Audi', 'BMW','JAGUAR','LAND ROVER','LEXUS','MERCEDES-BENZ','MINI')
- 
-	THEN 'Luxury'
- 
-	END AS Segment,
- 
-CASE
- 
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM', 'FIAT')
- 
-	THEN 'CDJR'
- 
-	WHEN Make in ('FORD', 'LINCOLN')
- 
-	THEN 'FORD'
- 
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
- 
-	THEN 'GM'
- 
-	WHEN Make in ('HYUNDAI', 'GENESIS')
- 
-	THEN 'HYUNDAI'
- 
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
- 
-	THEN 'JLR'
- 
-	Else Make
- 
-	END AS ParentBrand,
- 
---Make,
- 
---Model,
- 
-SUM(EarnedM1) AS EarnedM1,
- 
-SUM(CommitM1) AS CommitM1
-
-
-FROM(
-
-SELECT --PIVOTQUERY
- 
-Year,
- 
-Month,
- 
-Hyperion,
- 
-Make,
- 
-Model,
- 
-SUM(CASE WHEN AccountingMonth = 'Earned_M1' THEN QTY ELSE 0 END) AS EarnedM1,
- 
-SUM(CASE WHEN AccountingMonth = 'Commit_M1' THEN QTY ELSE 0 END) AS CommitM1,
- 
-SUM(CASE WHEN AccountingMonth = 'Earned_M1' THEN QTY ELSE 0 END) - SUM(CASE WHEN AccountingMonth = 'Commit_M1' THEN QTY ELSE 0 END) AS TurnedDown,
- 
-SUM(CASE WHEN AccountingMonth = 'Fcast_M1' THEN QTY ELSE 0 END) AS Fcast_M1,
- 
-SUM(CASE WHEN AccountingMonth = 'Fcast_M2' THEN QTY ELSE 0 END) AS Fcast_M2,
- 
-SUM(CASE WHEN AccountingMonth = 'Fcast_M3' THEN QTY ELSE 0 END) AS Fcast_M3,
- 
-SUM(CASE WHEN AccountingMonth = 'Net_Add' THEN QTY ELSE 0 END) AS NetAdd
-
-
-FROM(
-
-SELECT
- 
-       DC.[Year] AS Year,
- 
-	   DC.[Month]AS Month,
- 
-       D.[DealerCD] AS Hyperion,
- 
-       B.[BrandCD] AS Make,
- 
-       BM.[BrandModelCD] AS Model,
- 
-       --DC.[Mth],
- 
-		CASE
- 
-WHEN DC.[ColumnCD] IN ('TCCM1', 'TCC2_M1','TCC3_M1')
- 
-			THEN 'Commit_M1'
- 
-			WHEN DC.[ColumnCD] IN ('EAM1', 'EA2_M1', 'EA3_M1')
- 
-			THEN 'Earned_M1'
- 
-			WHEN ColumnCD IN ('NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
-
-			THEN 'Net_Add'
- 
-			WHEN DC.[ColumnCD] = 'SARFM1'
- 
-			THEN 'Fcast_M1'
- 
-			WHEN DC.[ColumnCD] = 'SARFM2'
- 
-			THEN 'Fcast_M2'
- 
-			WHEN DC.[ColumnCD] = 'SARFM3'
- 
-			THEN 'Fcast_M3'
- 
-			ELSE 'ERROR'
- 
-			END AS AccountingMonth,
- 
-		SUM(DC.[EnteredValue]) AS QTY
-
-FROM
- 
-(
- 
-SELECT
- 
-DC.[Year], DC.[Month], DC.[DealerVehicleID], DC.[Mth], DC.[ColumnCD], DC.[EnteredValue], DC.[StatusID]
- 
-FROM
- 
-[SSPRv3].[dbo].[DealerCommits] AS DC
- 
-WHERE
- 
-DC.[Year] = YEAR(GETDATE())
-AND DC.Month = {AllocationTracker.month_to_query}
- 
---AND
- 
---DC.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
-
-UNION
-
-SELECT
- 
-DF.[Year], DF.[Month], DF.[DealerVehicleID], DF.[Mth], DF.[ColumnCD], DF.[EnteredValue], DF.[StatusID]
- 
-FROM
- 
-[SSPRv3].[dbo].[DealerForecasts] AS DF
- 
-WHERE
- 
-DF.[Year] = YEAR(GETDATE())
-AND DF.Month = {AllocationTracker.month_to_query}
- 
---AND
- 
---DF.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
- 
-) AS DC
-
-INNER JOIN
- 
-       [SSPRv3].[dbo].[DealerVehicles] AS DV ON DC.[DealerVehicleID] = DV.[DealerVehicleID]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[Brands] AS B ON DV.[BrandID] = B.[BrandID]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[BrandModels] AS BM ON DV.[BrandModelID] = BM.[BrandModelID] AND B.[BrandID] = BM.[BrandID]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[Dealers] AS D ON DV.[DealerCD] = D.[DealerCD]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[DealerVehicleCores] AS DVC ON DC.[DealerVehicleID] = DVC.[DealerVehicleID] AND DV.[DealerVehicleID] = DVC.[DealerVehicleID] AND DC.[Year] = DVC.[Year] AND DC.[Month] = DVC.[Month]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[BrandModelDisplaySorts] AS BMDS ON BM.[BrandModelID] = BMDS.[BrandModelID]
- 
-WHERE 1=1
- 
-       --DV.[DealerCD] = @DealerCD
- 
-AND
- 
-DC.[Year] = YEAR(GETDATE())
-AND DC.Month = {AllocationTracker.month_to_query}
- 
---AND
- 
---DC.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
-
---AND BM.[BrandModelCD] = @BrandModelCD
- 
-and DC.[ColumnCD] in ('EAM1' , 'TCCM1', 'EA2_M1' , 'TCC2_M1' , 'EA3_M1' , 'TCC3_M1', 'SARFM1', 'SARFM2', 'SARFM3', 'NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
-
-AND DC.[EnteredValue] <> '0'
-
-GROUP BY
- 
-       DC.[Year],
- 
-	   DC.[Month],
- 
-D.[DealerCD],
- 
-       B.[BrandCD],
- 
-       BM.[BrandModelCD],
- 
-       --DC.[Mth],
- 
-		CASE
- 
-			WHEN DC.[ColumnCD] IN ('TCCM1', 'TCC2_M1','TCC3_M1')
- 
-			THEN 'Commit_M1'
- 
-			WHEN DC.[ColumnCD] IN ('EAM1', 'EA2_M1', 'EA3_M1')
- 
-			THEN 'Earned_M1'
- 
-			WHEN ColumnCD IN ('NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
-
-			THEN 'Net_Add'
- 
-			WHEN DC.[ColumnCD] = 'SARFM1'
- 
-			THEN 'Fcast_M1'
- 
-			WHEN DC.[ColumnCD] = 'SARFM2'
- 
-			THEN 'Fcast_M2'
- 
-			WHEN DC.[ColumnCD] = 'SARFM3'
- 
-			THEN 'Fcast_M3'
- 
-			ELSE 'ERROR'
- 
-			END
-
-)AS PIVOTQUERY
-
-GROUP BY
- 
-Year,
- 
-Month,
- 
-Make,
- 
-Model,
- 
-Hyperion
-
-)AS ParentBrand
-
-GROUP BY
- 
-Year,
- 
-Month,
- 
---Make,
- 
---Model,
- 
-Hyperion,
- 
-CASE
- 
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM', 'FIAT')
- 
-	THEN 'CDJR'
- 
-	WHEN Make in ('FORD', 'LINCOLN')
- 
-	THEN 'FORD'
- 
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
- 
-	THEN 'GM'
- 
-	WHEN Make in ('HYUNDAI', 'GENESIS')
- 
-	THEN 'HYUNDAI'
- 
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
- 
-	THEN 'JLR'
- 
-	Else Make
- 
-	END,
- 
-CASE
- 
-	WHEN Make IN ('CHRYSLER','DODGE','JEEP','RAM', 'FIAT', 'FORD','LINCOLN','BUICK','CADILLAC','CHEVROLET','GMC')
- 
-	THEN 'Domestic'
- 
-	WHEN Make IN ('ACURA','HONDA', 'GENESIS','HYUNDAI','INFINITI', 'MAZDA', 'NISSAN','SUBARU','TOYOTA','VOLKSWAGEN', 'VOLVO')
- 
-	THEN 'Import'
- 
-	WHEN Make IN ('Audi', 'BMW','JAGUAR','LAND ROVER','LEXUS','MERCEDES-BENZ','MINI')
- 
-	THEN 'Luxury'
- 
-	END
-
-) AS FINALSQ
-
-WHERE
-Segment IS NOT NULL
+    WHERE
+    Inv >5
         """
-    SSPR_EV_query = f"""
-SELECT
---Year,
---Month,
-ParentBrand,
-Segment,
-Hyperion,
-Model,
-EarnedM1,
-CASE 
-	WHEN commitM1 > earnedM1 
-	THEN earnedM1 
-	ELSE commitM1 END AS CommitM1
 
-FROM(
+        NDD_EV_query = f"""
+    SELECT					
+    CONVERT(VARCHAR, AccountingMonth,101) AS AccountingMonth,								
+    hyperion,					
+    StoreName,					
+    CASE
+        WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
+        THEN 'CDJR'
+        WHEN Make in ('FORD', 'LINCOLN')
+        THEN 'Ford'
+        WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+        THEN 'GM'
+        WHEN Make in ('HYUNDAI', 'GENESIS')
+        THEN 'Hyundai'
+        WHEN Make in ('JAGUAR', 'LAND ROVER')
+        THEN 'JLR'
+        Else Make
+        END AS Brand,
+    --AllocationGroup,
+    SUM(CASE WHEN Type = 'Inv' THEN QTY ELSE 0 END) AS Inv,					
+    SUM(CASE WHEN Type = 'Sales' THEN QTY ELSE 0 END) AS Sales					
+                        
+    FROM(					
+                        
+    SELECT					
+    AccountingMonth,									
+    hyperion,					
+    StoreName,					
+    Make,
+    --AllocationGroup,
+    'Inv' AS Type,					
+    SUM(InventoryCount) AS QTY					
+                        
+    FROM					
+    NDDUsers.vInventoryMonthEnd					
+                        
+    WHERE									
+    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AND Department = '300'		
+    AND FuelType = 'Electric Fuel System'
+    --AND Make = 'Mercedes-Benz'
+                        
+    GROUP BY					
+    AccountingMonth,									
+    hyperion,					
+    StoreName,					
+    Make
+    --AllocationGroup
+                        
+    HAVING 					
+    SUM(InventoryCount) <> 0					
+                        
+    UNION ALL					
+                        
+    SELECT					
+    AccountingMonth,								
+    StoreHyperion,					
+    StoreName,					
+    VehicleMakeName,
+    --AllocationGroup,
+    'Sales' AS Type,					
+    SUM(VehicleSoldCount) AS QTY					
+                        
+    FROM					
+    NDDUsers.vSalesDetail_Vehicle					
+                        
+    WHERE										
+    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AND DepartmentName = 'NEW'					
+    AND RecordSource = 'Accounting'
+    AND VehicleFuelType = 'Electric Fuel System'
+    --AND VehicleMakeName = 'Mercedes-Benz'
+                
+                        
+    GROUP BY					
+    AccountingMonth,								
+    StoreHyperion,					
+    StoreName,					
+    VehicleMakeName
+    --AllocationGroup
+                        
+    HAVING 					
+    SUM(VehicleSoldCount) <> 0					
+                        
+    ) AS Subquery					
 
-SELECT --ParentBrand
- 
-Year,
- 
-Month,
- 
-Hyperion,
- 
-CASE
- 
-	WHEN Make IN ('CHRYSLER','DODGE','JEEP','RAM', 'FIAT', 'FORD','LINCOLN','BUICK','CADILLAC','CHEVROLET','GMC')
- 
-	THEN 'Domestic'
- 
-	WHEN Make IN ('ACURA','HONDA','GENESIS','HYUNDAI','INFINITI', 'MAZDA', 'NISSAN','SUBARU','TOYOTA','VOLKSWAGEN', 'VOLVO')
- 
-	THEN 'Import'
- 
-	WHEN Make IN ('Audi', 'BMW','JAGUAR','LAND ROVER','LEXUS','MERCEDES-BENZ','MINI')
- 
-	THEN 'Luxury'
- 
-	END AS Segment,
- 
-CASE
- 
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM', 'FIAT')
- 
-	THEN 'CDJR'
- 
-	WHEN Make in ('FORD', 'LINCOLN')
- 
-	THEN 'FORD'
- 
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
- 
-	THEN 'GM'
- 
-	WHEN Make in ('HYUNDAI', 'GENESIS')
- 
-	THEN 'HYUNDAI'
- 
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
- 
-	THEN 'JLR'
- 
-	Else Make
- 
-	END AS ParentBrand,
- 
---Make,
- 
-Model,
- 
-SUM(EarnedM1) AS EarnedM1,
- 
-SUM(CommitM1) AS CommitM1
+    WHERE
+    Make IS NOT NULL
+        
+    GROUP BY					
+    AccountingMonth,									
+    hyperion,					
+    StoreName,					
+    --AllocationGroup,
+    CASE
+        WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
+        THEN 'CDJR'
+        WHEN Make in ('FORD', 'LINCOLN')
+        THEN 'Ford'
+        WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+        THEN 'GM'
+        WHEN Make in ('HYUNDAI', 'GENESIS')
+        THEN 'Hyundai'
+        WHEN Make in ('JAGUAR', 'LAND ROVER')
+        THEN 'JLR'
+        Else Make
+        END    
+    """
+
+        NDD_EV_Flag_query = """
+        SELECT
+        AllocationGroup,
+        CASE
+            WHEN FuelType = 'Electric Fuel System'
+            THEN 'EV'
+            ELSE 'ICE'
+        END AS EV_Flag
 
 
-FROM(
 
-SELECT --PIVOTQUERY
- 
-Year,
- 
-Month,
- 
-Hyperion,
- 
-Make,
- 
-Model,
- 
-SUM(CASE WHEN AccountingMonth = 'Earned_M1' THEN QTY ELSE 0 END) AS EarnedM1,
- 
-SUM(CASE WHEN AccountingMonth = 'Commit_M1' THEN QTY ELSE 0 END) AS CommitM1,
- 
-SUM(CASE WHEN AccountingMonth = 'Earned_M1' THEN QTY ELSE 0 END) - SUM(CASE WHEN AccountingMonth = 'Commit_M1' THEN QTY ELSE 0 END) AS TurnedDown,
- 
-SUM(CASE WHEN AccountingMonth = 'Fcast_M1' THEN QTY ELSE 0 END) AS Fcast_M1,
- 
-SUM(CASE WHEN AccountingMonth = 'Fcast_M2' THEN QTY ELSE 0 END) AS Fcast_M2,
- 
-SUM(CASE WHEN AccountingMonth = 'Fcast_M3' THEN QTY ELSE 0 END) AS Fcast_M3,
- 
-SUM(CASE WHEN AccountingMonth = 'Net_Add' THEN QTY ELSE 0 END) AS NetAdd
+        FROM
+        NDDUsers.vInventoryMonthEnd
 
+        WHERE
+        AccountingMonth > = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-6, 0)
+        and Department = 300
 
-FROM(
+        GROUP BY
+        AllocationGroup,
+        CASE
+            WHEN FuelType = 'Electric Fuel System'
+            THEN 'EV'
+            ELSE 'ICE'
+        END
+        """
 
-SELECT
- 
-       DC.[Year] AS Year,
- 
-	   DC.[Month]AS Month,
- 
-       D.[DealerCD] AS Hyperion,
- 
-       B.[BrandCD] AS Make,
- 
-       BM.[BrandModelCD] AS Model,
- 
-       --DC.[Mth],
- 
-		CASE
- 
-WHEN DC.[ColumnCD] IN ('TCCM1', 'TCC2_M1','TCC3_M1')
- 
-			THEN 'Commit_M1'
- 
-			WHEN DC.[ColumnCD] IN ('EAM1', 'EA2_M1', 'EA3_M1')
- 
-			THEN 'Earned_M1'
- 
-			WHEN ColumnCD IN ('NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
+        NDD_query_3 = f"""
+    SELECT					
+    CONVERT(VARCHAR, AccountingMonth,101) AS AccountingMonth,								
+    --hyperion,					
+    --StoreName,					
+    CASE
+        WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
+        THEN 'CDJR'
+        WHEN Make in ('FORD', 'LINCOLN')
+        THEN 'Ford'
+        WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+        THEN 'GM'
+        WHEN Make in ('HYUNDAI', 'GENESIS')
+        THEN 'Hyundai'
+        WHEN Make in ('JAGUAR', 'LAND ROVER')
+        THEN 'JLR'
+        Else Make
+        END AS Brand,
+    --AllocationGroup,
+    SUM(CASE WHEN Type = 'Inv' THEN QTY ELSE 0 END) AS Inv,					
+    SUM(CASE WHEN Type = 'Sales' THEN QTY ELSE 0 END) AS Sales					
+                        
+    FROM(					
+                        
+    SELECT					
+    AccountingMonth,									
+    --hyperion,					
+    --StoreName,					
+    Make,
+    --AllocationGroup,
+    'Inv' AS Type,					
+    SUM(InventoryCount) AS QTY					
+                        
+    FROM					
+    NDDUsers.vInventoryMonthEnd					
+                        
+    WHERE									
+    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AND Department = '300'		
+    --AND Make = 'Mercedes-Benz'
+                        
+    GROUP BY					
+    AccountingMonth,									
+    --hyperion,					
+    --StoreName,					
+    Make
+    --AllocationGroup
+                        
+    HAVING 					
+    SUM(InventoryCount) <> 0					
+                        
+    UNION ALL					
+                        
+    SELECT					
+    AccountingMonth,								
+    --StoreHyperion,					
+    --StoreName,					
+    VehicleMakeName,
+    --AllocationGroup,
+    'Sales' AS Type,					
+    SUM(VehicleSoldCount) AS QTY					
+                        
+    FROM					
+    NDDUsers.vSalesDetail_Vehicle					
+                        
+    WHERE										
+    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AND DepartmentName = 'NEW'					
+    AND RecordSource = 'Accounting'
+    --AND VehicleMakeName = 'Mercedes-Benz'
+                
+                        
+    GROUP BY					
+    AccountingMonth,								
+    --StoreHyperion,					
+    --StoreName,					
+    VehicleMakeName
+    --AllocationGroup
+                        
+    HAVING 					
+    SUM(VehicleSoldCount) <> 0					
+                        
+    ) AS Subquery					
 
-			THEN 'Net_Add'
- 
-			WHEN DC.[ColumnCD] = 'SARFM1'
- 
-			THEN 'Fcast_M1'
- 
-			WHEN DC.[ColumnCD] = 'SARFM2'
- 
-			THEN 'Fcast_M2'
- 
-			WHEN DC.[ColumnCD] = 'SARFM3'
- 
-			THEN 'Fcast_M3'
- 
-			ELSE 'ERROR'
- 
-			END AS AccountingMonth,
- 
-		SUM(DC.[EnteredValue]) AS QTY
+    WHERE
+    Make IS NOT NULL
+        
+    GROUP BY					
+    AccountingMonth,									
+    --hyperion,					
+    --StoreName,					
+    --AllocationGroup,
+    CASE
+        WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM')
+        THEN 'CDJR'
+        WHEN Make in ('FORD', 'LINCOLN')
+        THEN 'Ford'
+        WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+        THEN 'GM'
+        WHEN Make in ('HYUNDAI', 'GENESIS')
+        THEN 'Hyundai'
+        WHEN Make in ('JAGUAR', 'LAND ROVER')
+        THEN 'JLR'
+        Else Make
+        END
+        """
+        
+        # Run NDD queries
+        ndd_queries = {
+            "NDD_df": NDD_query,    
+        # Replace with actual query
+            "NDD_EV_df": NDD_EV_query,
+            "NDD_df_4": NDD_EV_Flag_query,
+            "NDD_df_3": NDD_query_3
+        }
+        ndd_results = AllocationTracker.run_NDD_sql_queries(ndd_queries)
 
-FROM
- 
-(
- 
-SELECT
- 
-DC.[Year], DC.[Month], DC.[DealerVehicleID], DC.[Mth], DC.[ColumnCD], DC.[EnteredValue], DC.[StatusID]
- 
-FROM
- 
-[SSPRv3].[dbo].[DealerCommits] AS DC
- 
-WHERE
- 
-DC.[Year] = YEAR(GETDATE())
-AND DC.Month = {AllocationTracker.month_to_query}
- 
---AND
- 
---DC.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
+        # SSPR queries
+        SSPR_query = f"""
+    SELECT
+    --Year,
+    --Month,
+    ParentBrand,
+    Segment,
+    Hyperion,
+    EarnedM1,
+    CASE 
+        WHEN commitM1 > earnedM1 
+        THEN earnedM1 
+        ELSE commitM1 END AS CommitM1
 
-UNION
+    FROM(
 
-SELECT
- 
-DF.[Year], DF.[Month], DF.[DealerVehicleID], DF.[Mth], DF.[ColumnCD], DF.[EnteredValue], DF.[StatusID]
- 
-FROM
- 
-[SSPRv3].[dbo].[DealerForecasts] AS DF
- 
-WHERE
- 
-DF.[Year] = YEAR(GETDATE())
-AND DF.Month = {AllocationTracker.month_to_query}
- 
---AND
- 
---DF.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
- 
-) AS DC
-
-INNER JOIN
- 
-       [SSPRv3].[dbo].[DealerVehicles] AS DV ON DC.[DealerVehicleID] = DV.[DealerVehicleID]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[Brands] AS B ON DV.[BrandID] = B.[BrandID]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[BrandModels] AS BM ON DV.[BrandModelID] = BM.[BrandModelID] AND B.[BrandID] = BM.[BrandID]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[Dealers] AS D ON DV.[DealerCD] = D.[DealerCD]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[DealerVehicleCores] AS DVC ON DC.[DealerVehicleID] = DVC.[DealerVehicleID] AND DV.[DealerVehicleID] = DVC.[DealerVehicleID] AND DC.[Year] = DVC.[Year] AND DC.[Month] = DVC.[Month]
- 
-INNER JOIN
- 
-       [SSPRv3].[dbo].[BrandModelDisplaySorts] AS BMDS ON BM.[BrandModelID] = BMDS.[BrandModelID]
- 
-WHERE 1=1
- 
-       --DV.[DealerCD] = @DealerCD
- 
-AND
- 
-DC.[Year] = YEAR(GETDATE())
-AND DC.Month = {AllocationTracker.month_to_query}
- 
---AND
- 
---DC.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
-
---AND BM.[BrandModelCD] = @BrandModelCD
- 
-and DC.[ColumnCD] in ('EAM1' , 'TCCM1', 'EA2_M1' , 'TCC2_M1' , 'EA3_M1' , 'TCC3_M1', 'SARFM1', 'SARFM2', 'SARFM3', 'NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
-
-AND DC.[EnteredValue] <> '0'
-
-GROUP BY
- 
-       DC.[Year],
- 
-	   DC.[Month],
- 
-D.[DealerCD],
- 
-       B.[BrandCD],
- 
-       BM.[BrandModelCD],
- 
-       --DC.[Mth],
- 
-		CASE
- 
-			WHEN DC.[ColumnCD] IN ('TCCM1', 'TCC2_M1','TCC3_M1')
- 
-			THEN 'Commit_M1'
- 
-			WHEN DC.[ColumnCD] IN ('EAM1', 'EA2_M1', 'EA3_M1')
- 
-			THEN 'Earned_M1'
- 
-			WHEN ColumnCD IN ('NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
-
-			THEN 'Net_Add'
- 
-			WHEN DC.[ColumnCD] = 'SARFM1'
- 
-			THEN 'Fcast_M1'
- 
-			WHEN DC.[ColumnCD] = 'SARFM2'
- 
-			THEN 'Fcast_M2'
- 
-			WHEN DC.[ColumnCD] = 'SARFM3'
- 
-			THEN 'Fcast_M3'
- 
-			ELSE 'ERROR'
- 
-			END
-
-)AS PIVOTQUERY
-
-GROUP BY
- 
-Year,
- 
-Month,
- 
-Make,
- 
-Model,
- 
-Hyperion
-
-)AS ParentBrand
-
-GROUP BY
- 
-Year,
- 
-Month,
- 
---Make,
- 
-Model,
- 
-Hyperion,
- 
-CASE
- 
-	WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM', 'FIAT')
- 
-	THEN 'CDJR'
- 
-	WHEN Make in ('FORD', 'LINCOLN')
- 
-	THEN 'FORD'
- 
-	WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
- 
-	THEN 'GM'
- 
-	WHEN Make in ('HYUNDAI', 'GENESIS')
- 
-	THEN 'HYUNDAI'
- 
-	WHEN Make in ('JAGUAR', 'LAND ROVER')
- 
-	THEN 'JLR'
- 
-	Else Make
- 
-	END,
- 
-CASE
- 
-	WHEN Make IN ('CHRYSLER','DODGE','JEEP','RAM', 'FIAT', 'FORD','LINCOLN','BUICK','CADILLAC','CHEVROLET','GMC')
- 
-	THEN 'Domestic'
- 
-	WHEN Make IN ('ACURA','HONDA', 'GENESIS','HYUNDAI','INFINITI', 'MAZDA', 'NISSAN','SUBARU','TOYOTA','VOLKSWAGEN', 'VOLVO')
- 
-	THEN 'Import'
- 
-	WHEN Make IN ('Audi', 'BMW','JAGUAR','LAND ROVER','LEXUS','MERCEDES-BENZ','MINI')
- 
-	THEN 'Luxury'
- 
-	END
-
-) AS FINALSQ
-
-WHERE
-Segment IS NOT NULL
-"""
-
-    SSPR_History_query = f"""
     SELECT --ParentBrand
     
     Year,
     
     Month,
     
-    --Hyperion,
+    Hyperion,
     
     CASE
     
@@ -1290,7 +589,7 @@ Segment IS NOT NULL
     
         END AS ParentBrand,
     
-    Make,
+    --Make,
     
     --Model,
     
@@ -1390,7 +689,8 @@ Segment IS NOT NULL
     
     WHERE
     
-    DC.[Year] >= YEAR(GETDATE()) - 2
+    DC.[Year] = YEAR(GETDATE())
+    AND DC.Month = {AllocationTracker.month_to_query}
     
     --AND
     
@@ -1408,7 +708,8 @@ Segment IS NOT NULL
     
     WHERE
     
-    DF.[Year] >= YEAR(GETDATE()) - 2
+    DF.[Year] = YEAR(GETDATE())
+    AND DF.Month = {AllocationTracker.month_to_query}
     
     --AND
     
@@ -1446,7 +747,8 @@ Segment IS NOT NULL
     
     AND
     
-    DC.[Year] >= YEAR(GETDATE()) - 2
+    DC.[Year] = YEAR(GETDATE())
+    AND DC.Month = {AllocationTracker.month_to_query}
     
     --AND
     
@@ -1524,11 +826,11 @@ Segment IS NOT NULL
     
     Month,
     
-    Make,
+    --Make,
     
     --Model,
     
-    --Hyperion,
+    Hyperion,
     
     CASE
     
@@ -1571,27 +873,733 @@ Segment IS NOT NULL
         THEN 'Luxury'
     
         END
-"""    
 
-    # Run SSPR queries
-    sspr_queries = {
-        "SSPR_df": SSPR_query,
-        "SSPR_EV_df": SSPR_EV_query,
-        "SSPR_history_df": SSPR_History_query
-    }
-    sspr_results = AllocationTracker.run_BAPRD_sql_queries(sspr_queries)
+    ) AS FINALSQ
 
-    # Combine results and update Excel
-    all_data = {**ndd_results, **sspr_results}
+    WHERE
+    Segment IS NOT NULL
+            """
+        SSPR_EV_query = f"""
+    SELECT
+    --Year,
+    --Month,
+    ParentBrand,
+    Segment,
+    Hyperion,
+    Model,
+    EarnedM1,
+    CASE 
+        WHEN commitM1 > earnedM1 
+        THEN earnedM1 
+        ELSE commitM1 END AS CommitM1
+
+    FROM(
+
+    SELECT --ParentBrand
     
-    # Open Excel files    
-    app = xw.App(visible=True)    
-    allocation_wb = app.books.open(AllocationTracker.allocation_tracker_file)
-    daily_sales_wb = app.books.open(os.path.join(AllocationTracker.base_path, AllocationTracker.daily_sales_filename))
-    dynamic_sor_wb = app.books.open(AllocationTracker.dynamic_sor_file, read_only=True, ignore_read_only_recommended=True)
-    try:
-        AllocationTracker.update_excel_NDD_SSPR_Data(allocation_wb, all_data)
-        AllocationTracker.update_sspr_history(all_data.get('SSPR_history_df'))
-        AllocationTracker.run_macro_and_save_close(allocation_wb)
-    finally:
-        app.quit()
+    Year,
+    
+    Month,
+    
+    Hyperion,
+    
+    CASE
+    
+        WHEN Make IN ('CHRYSLER','DODGE','JEEP','RAM', 'FIAT', 'FORD','LINCOLN','BUICK','CADILLAC','CHEVROLET','GMC')
+    
+        THEN 'Domestic'
+    
+        WHEN Make IN ('ACURA','HONDA','GENESIS','HYUNDAI','INFINITI', 'MAZDA', 'NISSAN','SUBARU','TOYOTA','VOLKSWAGEN', 'VOLVO')
+    
+        THEN 'Import'
+    
+        WHEN Make IN ('Audi', 'BMW','JAGUAR','LAND ROVER','LEXUS','MERCEDES-BENZ','MINI')
+    
+        THEN 'Luxury'
+    
+        END AS Segment,
+    
+    CASE
+    
+        WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM', 'FIAT')
+    
+        THEN 'CDJR'
+    
+        WHEN Make in ('FORD', 'LINCOLN')
+    
+        THEN 'FORD'
+    
+        WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+    
+        THEN 'GM'
+    
+        WHEN Make in ('HYUNDAI', 'GENESIS')
+    
+        THEN 'HYUNDAI'
+    
+        WHEN Make in ('JAGUAR', 'LAND ROVER')
+    
+        THEN 'JLR'
+    
+        Else Make
+    
+        END AS ParentBrand,
+    
+    --Make,
+    
+    Model,
+    
+    SUM(EarnedM1) AS EarnedM1,
+    
+    SUM(CommitM1) AS CommitM1
+
+
+    FROM(
+
+    SELECT --PIVOTQUERY
+    
+    Year,
+    
+    Month,
+    
+    Hyperion,
+    
+    Make,
+    
+    Model,
+    
+    SUM(CASE WHEN AccountingMonth = 'Earned_M1' THEN QTY ELSE 0 END) AS EarnedM1,
+    
+    SUM(CASE WHEN AccountingMonth = 'Commit_M1' THEN QTY ELSE 0 END) AS CommitM1,
+    
+    SUM(CASE WHEN AccountingMonth = 'Earned_M1' THEN QTY ELSE 0 END) - SUM(CASE WHEN AccountingMonth = 'Commit_M1' THEN QTY ELSE 0 END) AS TurnedDown,
+    
+    SUM(CASE WHEN AccountingMonth = 'Fcast_M1' THEN QTY ELSE 0 END) AS Fcast_M1,
+    
+    SUM(CASE WHEN AccountingMonth = 'Fcast_M2' THEN QTY ELSE 0 END) AS Fcast_M2,
+    
+    SUM(CASE WHEN AccountingMonth = 'Fcast_M3' THEN QTY ELSE 0 END) AS Fcast_M3,
+    
+    SUM(CASE WHEN AccountingMonth = 'Net_Add' THEN QTY ELSE 0 END) AS NetAdd
+
+
+    FROM(
+
+    SELECT
+    
+        DC.[Year] AS Year,
+    
+        DC.[Month]AS Month,
+    
+        D.[DealerCD] AS Hyperion,
+    
+        B.[BrandCD] AS Make,
+    
+        BM.[BrandModelCD] AS Model,
+    
+        --DC.[Mth],
+    
+            CASE
+    
+    WHEN DC.[ColumnCD] IN ('TCCM1', 'TCC2_M1','TCC3_M1')
+    
+                THEN 'Commit_M1'
+    
+                WHEN DC.[ColumnCD] IN ('EAM1', 'EA2_M1', 'EA3_M1')
+    
+                THEN 'Earned_M1'
+    
+                WHEN ColumnCD IN ('NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
+
+                THEN 'Net_Add'
+    
+                WHEN DC.[ColumnCD] = 'SARFM1'
+    
+                THEN 'Fcast_M1'
+    
+                WHEN DC.[ColumnCD] = 'SARFM2'
+    
+                THEN 'Fcast_M2'
+    
+                WHEN DC.[ColumnCD] = 'SARFM3'
+    
+                THEN 'Fcast_M3'
+    
+                ELSE 'ERROR'
+    
+                END AS AccountingMonth,
+    
+            SUM(DC.[EnteredValue]) AS QTY
+
+    FROM
+    
+    (
+    
+    SELECT
+    
+    DC.[Year], DC.[Month], DC.[DealerVehicleID], DC.[Mth], DC.[ColumnCD], DC.[EnteredValue], DC.[StatusID]
+    
+    FROM
+    
+    [SSPRv3].[dbo].[DealerCommits] AS DC
+    
+    WHERE
+    
+    DC.[Year] = YEAR(GETDATE())
+    AND DC.Month = {AllocationTracker.month_to_query}
+    
+    --AND
+    
+    --DC.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
+
+    UNION
+
+    SELECT
+    
+    DF.[Year], DF.[Month], DF.[DealerVehicleID], DF.[Mth], DF.[ColumnCD], DF.[EnteredValue], DF.[StatusID]
+    
+    FROM
+    
+    [SSPRv3].[dbo].[DealerForecasts] AS DF
+    
+    WHERE
+    
+    DF.[Year] = YEAR(GETDATE())
+    AND DF.Month = {AllocationTracker.month_to_query}
+    
+    --AND
+    
+    --DF.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
+    
+    ) AS DC
+
+    INNER JOIN
+    
+        [SSPRv3].[dbo].[DealerVehicles] AS DV ON DC.[DealerVehicleID] = DV.[DealerVehicleID]
+    
+    INNER JOIN
+    
+        [SSPRv3].[dbo].[Brands] AS B ON DV.[BrandID] = B.[BrandID]
+    
+    INNER JOIN
+    
+        [SSPRv3].[dbo].[BrandModels] AS BM ON DV.[BrandModelID] = BM.[BrandModelID] AND B.[BrandID] = BM.[BrandID]
+    
+    INNER JOIN
+    
+        [SSPRv3].[dbo].[Dealers] AS D ON DV.[DealerCD] = D.[DealerCD]
+    
+    INNER JOIN
+    
+        [SSPRv3].[dbo].[DealerVehicleCores] AS DVC ON DC.[DealerVehicleID] = DVC.[DealerVehicleID] AND DV.[DealerVehicleID] = DVC.[DealerVehicleID] AND DC.[Year] = DVC.[Year] AND DC.[Month] = DVC.[Month]
+    
+    INNER JOIN
+    
+        [SSPRv3].[dbo].[BrandModelDisplaySorts] AS BMDS ON BM.[BrandModelID] = BMDS.[BrandModelID]
+    
+    WHERE 1=1
+    
+        --DV.[DealerCD] = @DealerCD
+    
+    AND
+    
+    DC.[Year] = YEAR(GETDATE())
+    AND DC.Month = {AllocationTracker.month_to_query}
+    
+    --AND
+    
+    --DC.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
+
+    --AND BM.[BrandModelCD] = @BrandModelCD
+    
+    and DC.[ColumnCD] in ('EAM1' , 'TCCM1', 'EA2_M1' , 'TCC2_M1' , 'EA3_M1' , 'TCC3_M1', 'SARFM1', 'SARFM2', 'SARFM3', 'NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
+
+    AND DC.[EnteredValue] <> '0'
+
+    GROUP BY
+    
+        DC.[Year],
+    
+        DC.[Month],
+    
+    D.[DealerCD],
+    
+        B.[BrandCD],
+    
+        BM.[BrandModelCD],
+    
+        --DC.[Mth],
+    
+            CASE
+    
+                WHEN DC.[ColumnCD] IN ('TCCM1', 'TCC2_M1','TCC3_M1')
+    
+                THEN 'Commit_M1'
+    
+                WHEN DC.[ColumnCD] IN ('EAM1', 'EA2_M1', 'EA3_M1')
+    
+                THEN 'Earned_M1'
+    
+                WHEN ColumnCD IN ('NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
+
+                THEN 'Net_Add'
+    
+                WHEN DC.[ColumnCD] = 'SARFM1'
+    
+                THEN 'Fcast_M1'
+    
+                WHEN DC.[ColumnCD] = 'SARFM2'
+    
+                THEN 'Fcast_M2'
+    
+                WHEN DC.[ColumnCD] = 'SARFM3'
+    
+                THEN 'Fcast_M3'
+    
+                ELSE 'ERROR'
+    
+                END
+
+    )AS PIVOTQUERY
+
+    GROUP BY
+    
+    Year,
+    
+    Month,
+    
+    Make,
+    
+    Model,
+    
+    Hyperion
+
+    )AS ParentBrand
+
+    GROUP BY
+    
+    Year,
+    
+    Month,
+    
+    --Make,
+    
+    Model,
+    
+    Hyperion,
+    
+    CASE
+    
+        WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM', 'FIAT')
+    
+        THEN 'CDJR'
+    
+        WHEN Make in ('FORD', 'LINCOLN')
+    
+        THEN 'FORD'
+    
+        WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+    
+        THEN 'GM'
+    
+        WHEN Make in ('HYUNDAI', 'GENESIS')
+    
+        THEN 'HYUNDAI'
+    
+        WHEN Make in ('JAGUAR', 'LAND ROVER')
+    
+        THEN 'JLR'
+    
+        Else Make
+    
+        END,
+    
+    CASE
+    
+        WHEN Make IN ('CHRYSLER','DODGE','JEEP','RAM', 'FIAT', 'FORD','LINCOLN','BUICK','CADILLAC','CHEVROLET','GMC')
+    
+        THEN 'Domestic'
+    
+        WHEN Make IN ('ACURA','HONDA', 'GENESIS','HYUNDAI','INFINITI', 'MAZDA', 'NISSAN','SUBARU','TOYOTA','VOLKSWAGEN', 'VOLVO')
+    
+        THEN 'Import'
+    
+        WHEN Make IN ('Audi', 'BMW','JAGUAR','LAND ROVER','LEXUS','MERCEDES-BENZ','MINI')
+    
+        THEN 'Luxury'
+    
+        END
+
+    ) AS FINALSQ
+
+    WHERE
+    Segment IS NOT NULL
+    """
+
+        SSPR_History_query = f"""
+        SELECT --ParentBrand
+        
+        Year,
+        
+        Month,
+        
+        --Hyperion,
+        
+        CASE
+        
+            WHEN Make IN ('CHRYSLER','DODGE','JEEP','RAM', 'FIAT', 'FORD','LINCOLN','BUICK','CADILLAC','CHEVROLET','GMC')
+        
+            THEN 'Domestic'
+        
+            WHEN Make IN ('ACURA','HONDA','GENESIS','HYUNDAI','INFINITI', 'MAZDA', 'NISSAN','SUBARU','TOYOTA','VOLKSWAGEN', 'VOLVO')
+        
+            THEN 'Import'
+        
+            WHEN Make IN ('Audi', 'BMW','JAGUAR','LAND ROVER','LEXUS','MERCEDES-BENZ','MINI')
+        
+            THEN 'Luxury'
+        
+            END AS Segment,
+        
+        CASE
+        
+            WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM', 'FIAT')
+        
+            THEN 'CDJR'
+        
+            WHEN Make in ('FORD', 'LINCOLN')
+        
+            THEN 'FORD'
+        
+            WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+        
+            THEN 'GM'
+        
+            WHEN Make in ('HYUNDAI', 'GENESIS')
+        
+            THEN 'HYUNDAI'
+        
+            WHEN Make in ('JAGUAR', 'LAND ROVER')
+        
+            THEN 'JLR'
+        
+            Else Make
+        
+            END AS ParentBrand,
+        
+        Make,
+        
+        --Model,
+        
+        SUM(EarnedM1) AS EarnedM1,
+        
+        SUM(CommitM1) AS CommitM1
+
+
+        FROM(
+
+        SELECT --PIVOTQUERY
+        
+        Year,
+        
+        Month,
+        
+        Hyperion,
+        
+        Make,
+        
+        Model,
+        
+        SUM(CASE WHEN AccountingMonth = 'Earned_M1' THEN QTY ELSE 0 END) AS EarnedM1,
+        
+        SUM(CASE WHEN AccountingMonth = 'Commit_M1' THEN QTY ELSE 0 END) AS CommitM1,
+        
+        SUM(CASE WHEN AccountingMonth = 'Earned_M1' THEN QTY ELSE 0 END) - SUM(CASE WHEN AccountingMonth = 'Commit_M1' THEN QTY ELSE 0 END) AS TurnedDown,
+        
+        SUM(CASE WHEN AccountingMonth = 'Fcast_M1' THEN QTY ELSE 0 END) AS Fcast_M1,
+        
+        SUM(CASE WHEN AccountingMonth = 'Fcast_M2' THEN QTY ELSE 0 END) AS Fcast_M2,
+        
+        SUM(CASE WHEN AccountingMonth = 'Fcast_M3' THEN QTY ELSE 0 END) AS Fcast_M3,
+        
+        SUM(CASE WHEN AccountingMonth = 'Net_Add' THEN QTY ELSE 0 END) AS NetAdd
+
+
+        FROM(
+
+        SELECT
+        
+            DC.[Year] AS Year,
+        
+            DC.[Month]AS Month,
+        
+            D.[DealerCD] AS Hyperion,
+        
+            B.[BrandCD] AS Make,
+        
+            BM.[BrandModelCD] AS Model,
+        
+            --DC.[Mth],
+        
+                CASE
+        
+        WHEN DC.[ColumnCD] IN ('TCCM1', 'TCC2_M1','TCC3_M1')
+        
+                    THEN 'Commit_M1'
+        
+                    WHEN DC.[ColumnCD] IN ('EAM1', 'EA2_M1', 'EA3_M1')
+        
+                    THEN 'Earned_M1'
+        
+                    WHEN ColumnCD IN ('NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
+
+                    THEN 'Net_Add'
+        
+                    WHEN DC.[ColumnCD] = 'SARFM1'
+        
+                    THEN 'Fcast_M1'
+        
+                    WHEN DC.[ColumnCD] = 'SARFM2'
+        
+                    THEN 'Fcast_M2'
+        
+                    WHEN DC.[ColumnCD] = 'SARFM3'
+        
+                    THEN 'Fcast_M3'
+        
+                    ELSE 'ERROR'
+        
+                    END AS AccountingMonth,
+        
+                SUM(DC.[EnteredValue]) AS QTY
+
+        FROM
+        
+        (
+        
+        SELECT
+        
+        DC.[Year], DC.[Month], DC.[DealerVehicleID], DC.[Mth], DC.[ColumnCD], DC.[EnteredValue], DC.[StatusID]
+        
+        FROM
+        
+        [SSPRv3].[dbo].[DealerCommits] AS DC
+        
+        WHERE
+        
+        DC.[Year] >= YEAR(GETDATE()) - 2
+        
+        --AND
+        
+        --DC.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
+
+        UNION
+
+        SELECT
+        
+        DF.[Year], DF.[Month], DF.[DealerVehicleID], DF.[Mth], DF.[ColumnCD], DF.[EnteredValue], DF.[StatusID]
+        
+        FROM
+        
+        [SSPRv3].[dbo].[DealerForecasts] AS DF
+        
+        WHERE
+        
+        DF.[Year] >= YEAR(GETDATE()) - 2
+        
+        --AND
+        
+        --DF.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
+        
+        ) AS DC
+
+        INNER JOIN
+        
+            [SSPRv3].[dbo].[DealerVehicles] AS DV ON DC.[DealerVehicleID] = DV.[DealerVehicleID]
+        
+        INNER JOIN
+        
+            [SSPRv3].[dbo].[Brands] AS B ON DV.[BrandID] = B.[BrandID]
+        
+        INNER JOIN
+        
+            [SSPRv3].[dbo].[BrandModels] AS BM ON DV.[BrandModelID] = BM.[BrandModelID] AND B.[BrandID] = BM.[BrandID]
+        
+        INNER JOIN
+        
+            [SSPRv3].[dbo].[Dealers] AS D ON DV.[DealerCD] = D.[DealerCD]
+        
+        INNER JOIN
+        
+            [SSPRv3].[dbo].[DealerVehicleCores] AS DVC ON DC.[DealerVehicleID] = DVC.[DealerVehicleID] AND DV.[DealerVehicleID] = DVC.[DealerVehicleID] AND DC.[Year] = DVC.[Year] AND DC.[Month] = DVC.[Month]
+        
+        INNER JOIN
+        
+            [SSPRv3].[dbo].[BrandModelDisplaySorts] AS BMDS ON BM.[BrandModelID] = BMDS.[BrandModelID]
+        
+        WHERE 1=1
+        
+            --DV.[DealerCD] = @DealerCD
+        
+        AND
+        
+        DC.[Year] >= YEAR(GETDATE()) - 2
+        
+        --AND
+        
+        --DC.[Month] in ( Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-5, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-4, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-3, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-2, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)), Month(DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0))  )
+
+        --AND BM.[BrandModelCD] = @BrandModelCD
+        
+        and DC.[ColumnCD] in ('EAM1' , 'TCCM1', 'EA2_M1' , 'TCC2_M1' , 'EA3_M1' , 'TCC3_M1', 'SARFM1', 'SARFM2', 'SARFM3', 'NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
+
+        AND DC.[EnteredValue] <> '0'
+
+        GROUP BY
+        
+            DC.[Year],
+        
+            DC.[Month],
+        
+        D.[DealerCD],
+        
+            B.[BrandCD],
+        
+            BM.[BrandModelCD],
+        
+            --DC.[Mth],
+        
+                CASE
+        
+                    WHEN DC.[ColumnCD] IN ('TCCM1', 'TCC2_M1','TCC3_M1')
+        
+                    THEN 'Commit_M1'
+        
+                    WHEN DC.[ColumnCD] IN ('EAM1', 'EA2_M1', 'EA3_M1')
+        
+                    THEN 'Earned_M1'
+        
+                    WHEN ColumnCD IN ('NAM1','NAM2','NAM3','NAM4','NAM5','NAM6')
+
+                    THEN 'Net_Add'
+        
+                    WHEN DC.[ColumnCD] = 'SARFM1'
+        
+                    THEN 'Fcast_M1'
+        
+                    WHEN DC.[ColumnCD] = 'SARFM2'
+        
+                    THEN 'Fcast_M2'
+        
+                    WHEN DC.[ColumnCD] = 'SARFM3'
+        
+                    THEN 'Fcast_M3'
+        
+                    ELSE 'ERROR'
+        
+                    END
+
+        )AS PIVOTQUERY
+
+        GROUP BY
+        
+        Year,
+        
+        Month,
+        
+        Make,
+        
+        Model,
+        
+        Hyperion
+
+        )AS ParentBrand
+
+        GROUP BY
+        
+        Year,
+        
+        Month,
+        
+        Make,
+        
+        --Model,
+        
+        --Hyperion,
+        
+        CASE
+        
+            WHEN Make IN ('CHRYSLER', 'DODGE','JEEP','RAM', 'FIAT')
+        
+            THEN 'CDJR'
+        
+            WHEN Make in ('FORD', 'LINCOLN')
+        
+            THEN 'FORD'
+        
+            WHEN Make IN ('BUICK', 'CADILLAC', 'CHEVROLET', 'GMC')
+        
+            THEN 'GM'
+        
+            WHEN Make in ('HYUNDAI', 'GENESIS')
+        
+            THEN 'HYUNDAI'
+        
+            WHEN Make in ('JAGUAR', 'LAND ROVER')
+        
+            THEN 'JLR'
+        
+            Else Make
+        
+            END,
+        
+        CASE
+        
+            WHEN Make IN ('CHRYSLER','DODGE','JEEP','RAM', 'FIAT', 'FORD','LINCOLN','BUICK','CADILLAC','CHEVROLET','GMC')
+        
+            THEN 'Domestic'
+        
+            WHEN Make IN ('ACURA','HONDA', 'GENESIS','HYUNDAI','INFINITI', 'MAZDA', 'NISSAN','SUBARU','TOYOTA','VOLKSWAGEN', 'VOLVO')
+        
+            THEN 'Import'
+        
+            WHEN Make IN ('Audi', 'BMW','JAGUAR','LAND ROVER','LEXUS','MERCEDES-BENZ','MINI')
+        
+            THEN 'Luxury'
+        
+            END
+    """    
+
+        # Run SSPR queries
+        sspr_queries = {
+            "SSPR_df": SSPR_query,
+            "SSPR_EV_df": SSPR_EV_query,
+            "SSPR_history_df": SSPR_History_query
+        }
+        sspr_results = AllocationTracker.run_BAPRD_sql_queries(sspr_queries)
+
+        # Combine results and update Excel
+        all_data = {**ndd_results, **sspr_results}
+        
+        # Open Excel files    
+        app = xw.App(visible=True)    
+        allocation_wb = app.books.open(AllocationTracker.allocation_tracker_file)
+        daily_sales_wb = app.books.open(os.path.join(AllocationTracker.base_path, AllocationTracker.daily_sales_filename))
+        dynamic_sor_wb = app.books.open(AllocationTracker.dynamic_sor_file, read_only=True, ignore_read_only_recommended=True)
+        try:
+            AllocationTracker.update_excel_NDD_SSPR_Data(allocation_wb, all_data)
+            AllocationTracker.update_sspr_history(all_data.get('SSPR_history_df'))
+            AllocationTracker.run_macro_and_save_close(allocation_wb)
+        finally:
+            # Close other workbooks without saving
+            if daily_sales_wb:
+                daily_sales_wb.close(save_changes=False)
+            if dynamic_sor_wb:
+                dynamic_sor_wb.close(save_changes=False)
+            app.quit()
+
+if __name__ == "__main__":
+
+    base_path = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Allocation_Tracker'
+    tracker = AllocationTracker = AllocationTracker(base_path)
+    tracker.run_allocation_tracker

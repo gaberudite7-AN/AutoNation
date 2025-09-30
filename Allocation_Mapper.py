@@ -74,14 +74,27 @@ class AllocationMapper:
                 model = "Q5"
             elif make == "AUDI" and "RS Q8" in model:
                 model = "RS"
+            elif make == "AUDI" and "SQ7" in model:
+                model = "Q7"
+            elif make == "AUDI" and "SQ8" in model:
+                model = "Q8"
+            elif make == "AUDI" and "RS e-tron GT" in model:
+                model = "ETRON GT"
+            elif make == "HYUNDAI" and "PALISADE" in model:
+                model = "PALISADE"
             elif make == "FORD" and "TRANSIT" in model:
-                model = "TRANSIT"
+                model = "TRANSIT"            
+            elif make == "FORD" and "E-TRANSIT" in model:
+                model = "E-TRANSIT"
             elif make == "TOYOTA" and "PRIUS" in model:
                 model = "PRIUS"
             elif make == "CHEVROLET" and "CORVETTE" in model:
                 model = "CORVET"
             elif make == "JEEP" and "GRAND WAGONEER" in model:
                 model = "GRAND WAGONEER"
+            # May need to adjust this??
+            elif make == "JEEP" and model == "GRAND":
+                model = "GRAND WAGONEER"   
             elif make == "JEEP" and "WAGONEER" in model:
                 if 'SPORT' in model:
                     model = "WAGONEER S"
@@ -92,6 +105,8 @@ class AllocationMapper:
                     model = "YKNXL"
                 else:
                     model = "YKN"
+            elif make == "MAZDA" and "HATCHBACK" in model:
+                model = "MAZDA3 HB"
             return f"{make}_{model}"
         
         # Run function to create abbreviated model names
@@ -168,22 +183,40 @@ class AllocationMapper:
             # Mapping logic for complicated cases
             # Chevrolet Silverado Crew Cab
             if make == "CHEVROLET" and model in silverado_models and "CREW CAB" in style:
-                return "1475 {Chevrolet_CLDCRW}"
+                if "HD" in model:
+                    return "1466 {Chevrolet_CHDCRW}"
+                else:
+                    return "1475 {Chevrolet_CLDCRW}"
             # Silverado Double Cab
             elif make == "CHEVROLET" and model in silverado_models and "DOUBLE CAB" in style:
-                return "2558 {Chevrolet_CHDDBL}"
+                if "HD" in model:
+                    return "2558 {Chevrolet_CHDDBL}"
+                else: 
+                    return "2558 {Chevrolet_CLDDBL}"
             # Silverado Reg
             elif make == "CHEVROLET" and model in silverado_models and "REG" in style:
-                return "1477 {Chevrolet_CLDREG}"
+                if "HD" in model:
+                    return "1467 {Chevrolet_CHDREG}"
+                else:
+                    return "1477 {Chevrolet_CLDREG}"
             # GMC Crew Cab
             elif make == "GMC" and model in gmc_models and "CREW CAB" in style:
-                return "1763 {GMC_GLDCRW}"
+                if "HD" in model:
+                    return "1761 {GMC_GHDCRW}"
+                else:
+                    return "1763 {GMC_GLDCRW}"
             # GMC Double Cab
             elif make == "GMC" and model in gmc_models and "DOUBLE CAB" in style:
-                return "1764 {GMC_GLDDBL}"
+                if "HD" in model:
+                    return "2566 {GMC_GHDDBL}"
+                else:
+                    return "1764 {GMC_GLDDBL}"
             # GMC Reg
             elif make == "GMC" and model in gmc_models and "REG" in style:
-                return "2602 {GMC_GHDREG}"
+                if "HD" in model:
+                    return "2602 {GMC_GHDREG}"
+                else: 
+                    return "1765 {GMC_GLDREG}"
             # Ford Super Duty
             elif make == "FORD" and model in ford_models:
                 return "1706 {Ford_F-SERIES SD}"
@@ -192,7 +225,7 @@ class AllocationMapper:
                 return "2741 {GMC_HEVTRK}"
             # Chevrolet Suburban
             elif make == "CHEVROLET" and model == "SUBURBAN":
-                return "1288 {Chevrolet_SUBURB}"
+                return "1517 {Chevrolet_SUBURB}"
             # Chevrolet Tahoe
             elif make == "CHEVROLET" and model == "TAHOE":
                 return "1288 {Chevrolet_TAHOE}"
@@ -211,19 +244,31 @@ class AllocationMapper:
                     return "2487 {Toyota_TUNDRA 4WD}"
                 else:
                     return "2488 {Toyota_TUNDRA 2WD}"
+            # Toyota Corolla
+            elif make == "TOYOTA" and model == "COROLLA":
+                if "HYBRID" in style:
+                    return "2453 {Toyota_COROLLA HYBRID}"
+                else:
+                    return "2451 {Toyota_COROLLA}"
             elif make == "RAM":
                 if "1500" in model:
-                    return "2364 {RAM_HD 1500}"
+                    return "2361 {Ram_CREWPRM}"
                 elif "2500" in model:
                     return "2364 {RAM_HD 2500}"
                 elif "3500" in model:
                     return "2364 {RAM_HD 3500}"
                 elif "4500 CHASSIS CAB" in model:
                     return "2349 {RAM_4500/5500}"
-            return None
-        
+                elif "PROMASTER" in model:
+                    if "EV" in model:
+                        return "2817 {Ram_PROMASTER EV}"
+                    if "CITY" in model:
+                        return "2371 {Ram_PROMASTER CITY}"
+                    else:
+                        return "2368 {RAM_PROMASTER}"
+                return None
         # Apply only to relevant makes
-        relevant_makes = ["CHEVROLET", "GMC", "FORD", "RAM"]
+        relevant_makes = ["CHEVROLET", "GMC", "FORD", "RAM", "TOYOTA"]
         general_mask = sales_inventory_df["MAKE"].str.upper().isin(relevant_makes)
         # Only update AllocationGroup if key(row) returns a value
         new_alloc = sales_inventory_df[general_mask].apply(key, axis=1)
@@ -243,10 +288,10 @@ class AllocationMapper:
 
             # Mapping logic for complicated cases
             # Toyota Bz4x
-            if make == "TOYOTA" and model == "bZ":
+            if make == "TOYOTA" and model == "BZ":
                 return "2736 {Toyota_BZ4X}"
             # Toyota Tundra
-            elif make == "TOYOTA" and model == "TUNDRA":
+            elif make == "TOYOTA" and "TUNDRA" in model:
                 if "4-DOOR" in trim:
                     return "2487 {Toyota_TUNDRA 4WD}"
                 else:
@@ -254,7 +299,7 @@ class AllocationMapper:
             return None
         
         # Apply only to relevant makes
-        relevant_makes = ["CHEVROLET", "GMC", "FORD", "RAM"]
+        relevant_makes = ["CHEVROLET", "GMC", "FORD", "RAM", "TOYOTA"]
         general_mask = pipeline_df["MAKE"].str.upper().isin(relevant_makes)
         # Only update AllocationGroup if key(row) returns a value
         new_alloc = pipeline_df[general_mask].apply(key, axis=1)
@@ -319,7 +364,7 @@ class AllocationMapper:
         model_abbr = {
             "WRANGLER": "WRNGL",
             "CHEROKEE": "CHRK",
-            "GRAND CHEROKEE": "GRCHRK",
+            "GRAND CHEROKEE": "GRCHRK"
             # Add more as needed
         }
 
@@ -415,7 +460,7 @@ class AllocationMapper:
 
     def delete_unneeded_makes(self, sales_inventory_df):
         makes_to_delete = ['Rolls-Royce', 'Maserati', 'McLaren', 'Mitsubishi', 'INEOS']
-        models_to_delete = ['Police Interceptor Utility']
+        models_to_delete = ['Police Interceptor Utility', 'MEDIUM TRK']
         mask = (~sales_inventory_df['MODEL'].isin(models_to_delete)) & (~sales_inventory_df['MAKE'].isin(makes_to_delete))
         return sales_inventory_df[mask]
 
@@ -548,11 +593,18 @@ WHERE rn = 1
     query_results["AllocationGroupPipeline"] = AllocationMapper.map_mb_sprinter(query_results["AllocationGroupPipeline"], mb_sprinter_df)
     query_results["AllocationGroupPipeline"] = AllocationMapper.map_jeep(query_results["AllocationGroupPipeline"], allocation_group_df)
     query_results["AllocationGroupPipeline"] = AllocationMapper.delete_unneeded_makes(query_results["AllocationGroupPipeline"])
+   
     # Apply lookup query for nomap rows
     query_results["AllocationGroupPipeline"] = AllocationMapper.fill_nomap_allocationgroups(
         query_results["AllocationGroupPipeline"], AllocationMapper.run_NDD_sql_queries, allocation_group_df
     )
 
     # Output to CSV
-    query_results["AllocationGroupPipeline"].to_csv(os.path.join(automation_path, "AllocationGroupPipeline.csv"), index=False)
+    query_results["AllocationGroupPipeline"].to_csv(os.path.join(automation_path, "Pipeline.csv"), index=False)
     print(f"✅ AllocationGroupPipeline mapping complete. {len(query_results['AllocationGroupPipeline'])} rows written to CSV.")
+
+
+    # Delete medium trk
+    # Jeeps - need to lookup (wrangler and gladiator)
+    # 1517 for suburb
+    # tahoe and promaster

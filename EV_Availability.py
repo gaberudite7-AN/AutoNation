@@ -48,7 +48,7 @@ def EV_Availability_Update():
     Sales_Inv_Pipeline_query = f"""
 DECLARE @GivenDate DATE = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0);
 DECLARE @CurrentMonth DATE = @GivenDate;
-DECLARE @StartDate DATE = '2025-06-01';
+DECLARE @StartDate DATE = '{Start_Date}';
 DECLARE @Yesterday DATE = DATEADD(DAY, -1, GETDATE());
  
 -- Aggregate sales by month and make
