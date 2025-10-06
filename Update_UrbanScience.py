@@ -100,8 +100,11 @@ def Update_Daily_UrbanScience():
         password = "f$w8Q)$z%pt)"
 
         # Login
+        time.sleep(5)
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "inputUsername"))).send_keys(username)
+        time.sleep(1)
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "password"))).send_keys(password)
+        time.sleep(1)
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "signIn"))).click()
         time.sleep(10)
 
@@ -111,6 +114,10 @@ def Update_Daily_UrbanScience():
                 (By.XPATH, f"//tr[.//div[@class='table-name' and normalize-space(text())='{filename}']]")
             )
         )
+
+        # Scroll the row into view
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", row)
+        time.sleep(1)
 
         # Inside that row, find the checkbox and click it
         checkbox = row.find_element(By.XPATH, ".//input[@type='checkbox']")
@@ -124,7 +131,7 @@ def Update_Daily_UrbanScience():
         )
         download_button.click()
         print(f"Download button clicked. Waiting for file to download...")
-        time.sleep(25)
+        time.sleep(30)
 
         # Move latest file to destination folder with adjusted name
         source_file = os.path.join(downloads_folder, filename)
@@ -151,6 +158,10 @@ def Update_Daily_UrbanScience():
                 )
             )
 
+            # Scroll the row into view
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", row)
+            time.sleep(1)
+
             # Inside that row, find the checkbox and click it
             checkbox = row.find_element(By.XPATH, ".//input[@type='checkbox']")
             checkbox.click()
@@ -163,7 +174,7 @@ def Update_Daily_UrbanScience():
             )
             download_button.click()
             print(f"Download button clicked. Waiting for file to download...")
-            time.sleep(25)            
+            time.sleep(30)            
 
             filename = "AutoNation_SalesFile_NationalSales_Make.txt"
 
@@ -247,7 +258,7 @@ def Refresh_MarketShare_Excels():
 #run function
 if __name__ == '__main__':
 
-    Update_Historicals()    
+    #Update_Historicals()    
     Update_Daily_UrbanScience()
-    Refresh_MarketShare_Excels()
+    #Refresh_MarketShare_Excels()
 # %%

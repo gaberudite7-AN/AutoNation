@@ -1567,6 +1567,6 @@ WHERE AccountingMonth = '{Current_accounting_month}'
 if __name__ == '__main__':
 
     Process_Daily_Sales_File()    
-    #Download_PWB()
-    #Update_PWB_Data()
+    Download_PWB()
+    Update_PWB_Data()
     Weekly_Data_Update()

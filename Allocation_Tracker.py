@@ -20,7 +20,12 @@ class AllocationTracker:
         self.month_to_query = None
 
         # Excel files
-        self.allocation_tracker_file = os.path.join(base_path, "Allocation_Tracker.xlsm")
+        if self.today.day >= 6: # Use Regular Allocation File
+            self.allocation_tracker_file = os.path.join(base_path, "Allocation_Tracker.xlsm")
+            print("Using Regular Allocation File")
+        else: # Use EOM Allocation File
+            self.allocation_tracker_file = os.path.join(base_path, "Allocation_Tracker_EOM.xlsm")
+            print("Using EOM Allocation File since day is less than 7th")
         self.dynamic_sor_file = r'W:\Corporate\Management Reporting Shared\Dynamic SOR.xlsb'
 
     def process_daily_sales_file(self):
@@ -41,11 +46,11 @@ class AllocationTracker:
             return new_path
 
     def calculate_dates(self):
-        if self.today.day >= 7:
+        if self.today.day >= 6: # Use Current month for SSPR and Prior month for NDD
             self.reference_date = self.today
             first_day_this_month = self.today.replace(day=1)
             months_back = first_day_this_month - timedelta(days=30)
-        else:
+        else: # Use Previous month for SSPR and Two months prior for NDD
             self.reference_date = self.today.replace(day=1) - timedelta(days=1)
             first_day_this_month = self.today.replace(day=1)
             months_back = first_day_this_month - timedelta(days=60)
@@ -195,7 +200,7 @@ class AllocationTracker:
     NDDUsers.vInventoryMonthEnd					
                         
     WHERE									
-    AccountingMonth = '{AllocationTracker.beginning_of_month}'
+    AccountingMonth = '{self.beginning_of_month}'
     AND Department = '300'		
     --AND Make = 'Mercedes-Benz'
                         
@@ -224,7 +229,7 @@ class AllocationTracker:
     NDDUsers.vSalesDetail_Vehicle					
                         
     WHERE										
-    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AccountingMonth = '{self.beginning_of_month}'			
     AND DepartmentName = 'NEW'					
     AND RecordSource = 'Accounting'
     --AND VehicleMakeName = 'Mercedes-Benz'
@@ -307,7 +312,7 @@ class AllocationTracker:
     NDDUsers.vInventoryMonthEnd					
                         
     WHERE									
-    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AccountingMonth = '{self.beginning_of_month}'			
     AND Department = '300'		
     AND FuelType = 'Electric Fuel System'
     --AND Make = 'Mercedes-Benz'
@@ -337,7 +342,7 @@ class AllocationTracker:
     NDDUsers.vSalesDetail_Vehicle					
                         
     WHERE										
-    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AccountingMonth = '{self.beginning_of_month}'			
     AND DepartmentName = 'NEW'					
     AND RecordSource = 'Accounting'
     AND VehicleFuelType = 'Electric Fuel System'
@@ -443,7 +448,7 @@ class AllocationTracker:
     NDDUsers.vInventoryMonthEnd					
                         
     WHERE									
-    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AccountingMonth = '{self.beginning_of_month}'			
     AND Department = '300'		
     --AND Make = 'Mercedes-Benz'
                         
@@ -472,7 +477,7 @@ class AllocationTracker:
     NDDUsers.vSalesDetail_Vehicle					
                         
     WHERE										
-    AccountingMonth = '{AllocationTracker.beginning_of_month}'			
+    AccountingMonth = '{self.beginning_of_month}'			
     AND DepartmentName = 'NEW'					
     AND RecordSource = 'Accounting'
     --AND VehicleMakeName = 'Mercedes-Benz'
@@ -521,7 +526,7 @@ class AllocationTracker:
             "NDD_df_4": NDD_EV_Flag_query,
             "NDD_df_3": NDD_query_3
         }
-        ndd_results = AllocationTracker.run_NDD_sql_queries(ndd_queries)
+        ndd_results = self.run_NDD_sql_queries(ndd_queries)
 
         # SSPR queries
         SSPR_query = f"""
@@ -690,7 +695,7 @@ class AllocationTracker:
     WHERE
     
     DC.[Year] = YEAR(GETDATE())
-    AND DC.Month = {AllocationTracker.month_to_query}
+    AND DC.Month = {self.month_to_query}
     
     --AND
     
@@ -709,7 +714,7 @@ class AllocationTracker:
     WHERE
     
     DF.[Year] = YEAR(GETDATE())
-    AND DF.Month = {AllocationTracker.month_to_query}
+    AND DF.Month = {self.month_to_query}
     
     --AND
     
@@ -748,7 +753,7 @@ class AllocationTracker:
     AND
     
     DC.[Year] = YEAR(GETDATE())
-    AND DC.Month = {AllocationTracker.month_to_query}
+    AND DC.Month = {self.month_to_query}
     
     --AND
     
@@ -1046,7 +1051,7 @@ class AllocationTracker:
     WHERE
     
     DC.[Year] = YEAR(GETDATE())
-    AND DC.Month = {AllocationTracker.month_to_query}
+    AND DC.Month = {self.month_to_query}
     
     --AND
     
@@ -1065,7 +1070,7 @@ class AllocationTracker:
     WHERE
     
     DF.[Year] = YEAR(GETDATE())
-    AND DF.Month = {AllocationTracker.month_to_query}
+    AND DF.Month = {self.month_to_query}
     
     --AND
     
@@ -1104,7 +1109,7 @@ class AllocationTracker:
     AND
     
     DC.[Year] = YEAR(GETDATE())
-    AND DC.Month = {AllocationTracker.month_to_query}
+    AND DC.Month = {self.month_to_query}
     
     --AND
     
@@ -1576,30 +1581,31 @@ class AllocationTracker:
             "SSPR_EV_df": SSPR_EV_query,
             "SSPR_history_df": SSPR_History_query
         }
-        sspr_results = AllocationTracker.run_BAPRD_sql_queries(sspr_queries)
+        sspr_results = self.run_BAPRD_sql_queries(sspr_queries)
 
         # Combine results and update Excel
         all_data = {**ndd_results, **sspr_results}
         
         # Open Excel files    
         app = xw.App(visible=True)    
-        allocation_wb = app.books.open(AllocationTracker.allocation_tracker_file)
-        daily_sales_wb = app.books.open(os.path.join(AllocationTracker.base_path, AllocationTracker.daily_sales_filename))
-        dynamic_sor_wb = app.books.open(AllocationTracker.dynamic_sor_file, read_only=True, ignore_read_only_recommended=True)
+        allocation_wb = app.books.open(self.allocation_tracker_file)
+        daily_sales_wb = app.books.open(os.path.join(self.base_path, self.daily_sales_filename))
+        dynamic_sor_wb = app.books.open(self.dynamic_sor_file, read_only=True, ignore_read_only_recommended=True)
         try:
-            AllocationTracker.update_excel_NDD_SSPR_Data(allocation_wb, all_data)
-            AllocationTracker.update_sspr_history(all_data.get('SSPR_history_df'))
-            AllocationTracker.run_macro_and_save_close(allocation_wb)
+            self.update_excel_NDD_SSPR_Data(allocation_wb, all_data)
+            self.update_sspr_history(all_data.get('SSPR_history_df'))
+            self.run_macro_and_save_close(allocation_wb)
         finally:
             # Close other workbooks without saving
             if daily_sales_wb:
-                daily_sales_wb.close(save_changes=False)
+                daily_sales_wb.close()
             if dynamic_sor_wb:
-                dynamic_sor_wb.close(save_changes=False)
+                dynamic_sor_wb.close()
             app.quit()
 
 if __name__ == "__main__":
 
     base_path = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Allocation_Tracker'
-    tracker = AllocationTracker = AllocationTracker(base_path)
-    tracker.run_allocation_tracker
+    tracker = AllocationTracker(base_path)
+    tracker.process_daily_sales_file()
+    tracker.run_allocation_tracker()
