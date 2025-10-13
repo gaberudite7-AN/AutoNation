@@ -78,14 +78,14 @@ def export_markets_to_pdf(driver, wait, page_label):
     # Define markets
     Markets = [
         'MK01 - Southern CA', 'MK02 - Northern CA & NV', 'MK03 - WA & AZ',
-        'MK04 - CO & North TX', 'MK05 - South TX', 'MK06 - Midwest & Northeast',
-        'MK07 - Southeast', 'MK08 - North-Central Fl', 'MK09 - South FL'
+        'MK04 - Colorado', 'MK05 - South TX', 'MK06 - Midwest & Northeast',
+        'MK07 - Southeast', 'MK08 - North-Central Fl', 'MK09 - South FL', 'MK10 - North TX'
     ]
 
     for market in Markets:
         print(f"Exporting market {market}")
         try:
-            label_text = "AN Market"
+            label_text = "AUTONATION_MARKET"
             
             # Locate the dropdown toggle for AN Market
             dropdown_toggle = wait.until(EC.element_to_be_clickable(

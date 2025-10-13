@@ -107,6 +107,31 @@ class AllocationMapper:
                     model = "YKN"
             elif make == "MAZDA" and "HATCHBACK" in model:
                 model = "MAZDA3 HB"
+            elif make == "CADILLAC" and "CT4" in model:
+                model = "CT4"
+            elif make == "CADILLAC" and "CT5" in model:
+                model = "CT5"
+            elif make == "CADILLAC" and "CT6" in model:
+                model = "CT6"
+            elif make == "LAND ROVER" and "DEFENDER" in model:
+                model = "NEW DEFENDER"
+            elif make == "LAND ROVER" and "DISCOVERY" in model:
+                model = "NEW DISCOVERY"
+            elif make == "VOLVO" and "XC60" in model:
+                model = "XC60"
+            elif make == "VOLVO" and "XC40" in model:
+                model = "XC40"
+            elif make == "VOLVO" and "EX30" in model:
+                model = "EX30"
+            elif make == "VOLVO" and "EX40" in model:
+                model = "EX40"
+            elif make == "VOLVO" and "EX90" in model:
+                model = "EX90"
+            elif make == "VOLVO" and "XC90" in model:
+                if "HYBRID" in model:
+                    model = "XC90 HYBRID"
+                else:
+                    model = "XC90"
             return f"{make}_{model}"
         
         # Run function to create abbreviated model names
@@ -532,7 +557,23 @@ if __name__ == "__main__":
     model,
     model_number;"""
     Search_query = """
-WITH RankedInventory AS (
+    WITH RankedInventory AS (
+        SELECT 
+            accountingmonth,
+            year,
+            Model_ID,
+            Make,
+            model,
+            trim,
+            AllocationGroup,
+            ROW_NUMBER() OVER (
+                PARTITION BY Model_ID 
+                ORDER BY year DESC, accountingmonth DESC
+            ) AS rn
+        FROM [NDD_ADP_RAW].[NDDUsers].[vInventoryMonthEnd]
+        WHERE Model_ID IN ('8346', 'MPJM74', 'DT6M98')
+    )
+
     SELECT 
         accountingmonth,
         year,
@@ -540,25 +581,9 @@ WITH RankedInventory AS (
         Make,
         model,
         trim,
-        AllocationGroup,
-        ROW_NUMBER() OVER (
-            PARTITION BY Model_ID 
-            ORDER BY year DESC, accountingmonth DESC
-        ) AS rn
-    FROM [NDD_ADP_RAW].[NDDUsers].[vInventoryMonthEnd]
-    WHERE Model_ID IN ('8346', 'MPJM74', 'DT6M98')
-)
-
-SELECT 
-    accountingmonth,
-    year,
-    Model_ID,
-    Make,
-    model,
-    trim,
-    AllocationGroup
-FROM RankedInventory
-WHERE rn = 1
+        AllocationGroup
+    FROM RankedInventory
+    WHERE rn = 1
 """
     
     queries = {

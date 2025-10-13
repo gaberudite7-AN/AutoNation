@@ -248,166 +248,166 @@ def Update_BPU_File():
     
     # Run SQL queries using SQL Alchemy and dump into Data tab
     NDD_query = """
-    SELECT -- PIVOT TABLE
-        CASE
-            WHEN AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 2, 0) THEN 'PM'
-            WHEN AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0) THEN 'CM'
-            WHEN AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 12, 0) THEN 'PY'
-            ELSE 'ERROR'
-        END AS Period,
-        AccountingMonth,
-        Hyperion,
-        StoreName,
-        Brand,
-        SUM(CASE WHEN Period = 'Ending' THEN InvQTY ELSE 0 END) AS InvTotal,
-        SUM(AgedInv) AS AgedInvCount,
-        SUM(SoldCount) AS SoldCount,
-        SUM(TotalBasePVR) AS BaseGross,
-        SUM(TotalCorePVR) AS FrontGross,
-        CASE 
-            WHEN SUM(SoldCount) = 0 THEN NULL 
-            ELSE SUM(TotalBasePVR) / SUM(SoldCount) 
-        END AS BasePVR,
-        CASE 
-            WHEN SUM(SoldCount) = 0 THEN NULL 
-            ELSE SUM(TotalCorePVR) / SUM(SoldCount) 
-        END AS CorePVR,
-        SUM(AccountingSoldCount) AS AccountingSoldCount
-    FROM (
-        -- First Query: Ending Inventory Data
-        SELECT 
+        SELECT -- PIVOT TABLE
+            CASE
+                WHEN AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 2, 0) THEN 'PM'
+                WHEN AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0) THEN 'CM'
+                WHEN AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 12, 0) THEN 'PY'
+                ELSE 'ERROR'
+            END AS Period,
             AccountingMonth,
             Hyperion,
             StoreName,
-            CASE 
-                WHEN Make IN ('Buick', 'Cadillac', 'Chevrolet', 'GMC') THEN 'GM'
-                WHEN Make IN ('Dodge', 'Fiat', 'Jeep', 'Ram', 'Chrysler') THEN 'Chrysler'
-                WHEN Make = 'Genesis' THEN 'Hyundai'
-                WHEN Make = 'Lincoln' THEN 'Ford'
-                WHEN Make IN ('Jaguar', 'Land Rover') THEN 'JLR'
-                ELSE Make
-            END AS Brand,
-            SUM(InventoryCount) AS InvQTY,
-            SUM(CASE WHEN DaysInInventoryAN > 90 THEN InventoryCount ELSE 0 END) AS AgedInv,
-            'Ending' AS Period,
-            NULL AS InvoiceTotal,
-            NULL AS CashPrice,
-            NULL AS TotalCorePVR,
-            NULL AS TotalBasePVR,
-            NULL AS SoldCount,
-            NULL AS TotalMSRP,
-            NULL AS AccountingSoldCount
-        FROM NDDUsers.vInventoryMonthEnd
-        WHERE 
-            (AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 2, 0)
-            AND AccountingMonth <> DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0)
-            AND Department = 300
-            AND MarketName NOT IN ('Market 98', 'Market 97'))
-            OR (AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 12, 0)
-                AND Department = 300
-                AND MarketName NOT IN ('Market 98', 'Market 97'))
-            OR (AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)
-                AND Department = 300
-                AND MarketName NOT IN ('Market 98', 'Market 97')
-                AND Status <> 'G'
-                )
-        GROUP BY AccountingMonth, Hyperion, StoreName, Make
-        HAVING SUM(InventoryCount) <> 0
-
-        UNION ALL
-
-        -- Second Query: Sales Data
-        SELECT 
-            AccountingMonth,
-            StoreHyperion AS Hyperion,
-            StoreName,
             Brand,
-            NULL AS InvQTY,
-            NULL AS AgedInv,
-            'Ending' AS Period,
-            SUM(InvoiceTotal) AS InvoiceTotal,
-            SUM(CashPrice) AS CashPrice,
-            SUM(CorePVR) AS TotalCorePVR,
-            SUM(BasePVR) AS TotalBasePVR,
+            SUM(CASE WHEN Period = 'Ending' THEN InvQTY ELSE 0 END) AS InvTotal,
+            SUM(AgedInv) AS AgedInvCount,
             SUM(SoldCount) AS SoldCount,
-            SUM(CASE WHEN SoldCount = 0 THEN 0 ELSE MSRP END) AS TotalMSRP,
+            SUM(TotalBasePVR) AS BaseGross,
+            SUM(TotalCorePVR) AS FrontGross,
+            CASE 
+                WHEN SUM(SoldCount) = 0 THEN NULL 
+                ELSE SUM(TotalBasePVR) / SUM(SoldCount) 
+            END AS BasePVR,
+            CASE 
+                WHEN SUM(SoldCount) = 0 THEN NULL 
+                ELSE SUM(TotalCorePVR) / SUM(SoldCount) 
+            END AS CorePVR,
             SUM(AccountingSoldCount) AS AccountingSoldCount
         FROM (
+            -- First Query: Ending Inventory Data
             SELECT 
-                Q2.*,
-                Q1.Brand
+                AccountingMonth,
+                Hyperion,
+                StoreName,
+                CASE 
+                    WHEN Make IN ('Buick', 'Cadillac', 'Chevrolet', 'GMC') THEN 'GM'
+                    WHEN Make IN ('Dodge', 'Fiat', 'Jeep', 'Ram', 'Chrysler') THEN 'Chrysler'
+                    WHEN Make = 'Genesis' THEN 'Hyundai'
+                    WHEN Make = 'Lincoln' THEN 'Ford'
+                    WHEN Make IN ('Jaguar', 'Land Rover') THEN 'JLR'
+                    ELSE Make
+                END AS Brand,
+                SUM(InventoryCount) AS InvQTY,
+                SUM(CASE WHEN DaysInInventoryAN > 90 THEN InventoryCount ELSE 0 END) AS AgedInv,
+                'Ending' AS Period,
+                NULL AS InvoiceTotal,
+                NULL AS CashPrice,
+                NULL AS TotalCorePVR,
+                NULL AS TotalBasePVR,
+                NULL AS SoldCount,
+                NULL AS TotalMSRP,
+                NULL AS AccountingSoldCount
+            FROM NDDUsers.vInventoryMonthEnd
+            WHERE 
+                (AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 2, 0)
+                AND AccountingMonth <> DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0)
+                AND Department = 300
+                AND MarketName NOT IN ('Market 98', 'Market 97'))
+                OR (AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 12, 0)
+                    AND Department = 300
+                    AND MarketName NOT IN ('Market 98', 'Market 97'))
+                OR (AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE())-1, 0)
+                    AND Department = 300
+                    AND MarketName NOT IN ('Market 98', 'Market 97')
+                    AND Status <> 'G'
+                    )
+            GROUP BY AccountingMonth, Hyperion, StoreName, Make
+            HAVING SUM(InventoryCount) <> 0
+
+            UNION ALL
+
+            -- Second Query: Sales Data
+            SELECT 
+                AccountingMonth,
+                StoreHyperion AS Hyperion,
+                StoreName,
+                Brand,
+                NULL AS InvQTY,
+                NULL AS AgedInv,
+                'Ending' AS Period,
+                SUM(InvoiceTotal) AS InvoiceTotal,
+                SUM(CashPrice) AS CashPrice,
+                SUM(CorePVR) AS TotalCorePVR,
+                SUM(BasePVR) AS TotalBasePVR,
+                SUM(SoldCount) AS SoldCount,
+                SUM(CASE WHEN SoldCount = 0 THEN 0 ELSE MSRP END) AS TotalMSRP,
+                SUM(AccountingSoldCount) AS AccountingSoldCount
             FROM (
-                -- First part of sales data
-                SELECT
-                    Vin,
-                    StoreHyperion,
-                    AccountingMonth,
-                    StoreName,
-                    VehicleMakeName,
-                    NULL AS Soldcount,
-                    SUM(InvoicePrice) AS InvoiceTotal,
-                    SUM(CashPrice) AS CashPrice,
-                    SUM(FrontGross) AS CorePVR,
-                    SUM(Baseretail) AS BasePVR,
-                    MAX(MSRP_Adv) AS MSRP,
-                    SUM(VehicleSoldCount) AS AccountingSoldCount
-                FROM NDDUsers.vSalesDetail_Vehicle
-                WHERE 
-                    AccountingMonth >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 2, 0)
-                    AND AccountingMonth <> DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0)
-                    AND DepartmentName = 'NEW'
-                    AND RecordSource = 'Accounting'
-                GROUP BY Vin, StoreHyperion, AccountingMonth, StoreName, VehicleMakeName
-                
-                UNION ALL
-                
-                -- Second part of sales data
-                SELECT
-                    Vin,
-                    StoreHyperion,
-                    AccountingMonth,
-                    StoreName,
-                    VehicleMakeName,
-                    SUM(VehicleSoldCount) AS SoldCount,
-                    NULL AS InvoiceTotal,
-                    NULL AS CashPrice,
-                    NULL AS CorePVR,
-                    NULL AS BasePVR,
-                    NULL AS MSRP,
-                    NULL AS AccountingSoldCount
-                FROM NDDUsers.vSalesDetail_Vehicle
-                WHERE 
-                    (AccountingMonth >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 2, 0)
-                    AND AccountingMonth <> DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0)
-                    AND DepartmentName = 'NEW')
-                    OR (AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 12, 0)
-                        AND DepartmentName = 'NEW')
-                GROUP BY Vin, StoreHyperion, AccountingMonth, StoreName, VehicleMakeName
-            ) Q2
-            LEFT JOIN (
                 SELECT 
-                    HYPERION_ID,
-                    CASE 
-                        WHEN MAN_NAME IN ('Chevrolet', 'GMC', 'Cadillac') THEN 'GM'
-                        WHEN MAN_NAME = 'Dodge' THEN 'Chrysler'
-                        WHEN MAN_NAME = 'Lincoln-Mercury' THEN 'Ford'
-                        WHEN MAN_NAME = 'Mercedes' THEN 'Mercedes-Benz'
-                        WHEN MAN_NAME IN ('Jaguar', 'Land Rover') THEN 'JLR'
-                        ELSE MAN_NAME
-                    END AS Brand
-                FROM NDDUsers.vHyperionDetail
-                WHERE STORE_STATUS = 'OPEN'
-                    --AND REGION = 'DEALERSHIP'
-                    AND ENTITY_NAME NOT LIKE '%Waymo%'
-                    AND ENTITY_NAME NOT LIKE '%WBYC%'
-                    AND HYP_TYPE = 'Store'
-            ) Q1 ON Q1.HYPERION_ID = Q2.StoreHyperion
-        ) AS SQ2
-        GROUP BY AccountingMonth, StoreHyperion, StoreName, Brand
-        HAVING SUM(SoldCount) <> 0
-    ) AS SQ
-    WHERE Brand NOT IN ('Lamborghini', 'Bentley', 'Aston Martin')
-    GROUP BY AccountingMonth, Hyperion, StoreName, Brand;
+                    Q2.*,
+                    Q1.Brand
+                FROM (
+                    -- First part of sales data
+                    SELECT
+                        Vin,
+                        StoreHyperion,
+                        AccountingMonth,
+                        StoreName,
+                        VehicleMakeName,
+                        NULL AS Soldcount,
+                        SUM(InvoicePrice) AS InvoiceTotal,
+                        SUM(CashPrice) AS CashPrice,
+                        SUM(FrontGross) AS CorePVR,
+                        SUM(Baseretail) AS BasePVR,
+                        MAX(MSRP_Adv) AS MSRP,
+                        SUM(VehicleSoldCount) AS AccountingSoldCount
+                    FROM NDDUsers.vSalesDetail_Vehicle
+                    WHERE 
+                        AccountingMonth >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 2, 0)
+                        AND AccountingMonth <> DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0)
+                        AND DepartmentName = 'NEW'
+                        AND RecordSource = 'Accounting'
+                    GROUP BY Vin, StoreHyperion, AccountingMonth, StoreName, VehicleMakeName
+                    
+                    UNION ALL
+                    
+                    -- Second part of sales data
+                    SELECT
+                        Vin,
+                        StoreHyperion,
+                        AccountingMonth,
+                        StoreName,
+                        VehicleMakeName,
+                        SUM(VehicleSoldCount) AS SoldCount,
+                        NULL AS InvoiceTotal,
+                        NULL AS CashPrice,
+                        NULL AS CorePVR,
+                        NULL AS BasePVR,
+                        NULL AS MSRP,
+                        NULL AS AccountingSoldCount
+                    FROM NDDUsers.vSalesDetail_Vehicle
+                    WHERE 
+                        (AccountingMonth >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 2, 0)
+                        AND AccountingMonth <> DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0)
+                        AND DepartmentName = 'NEW')
+                        OR (AccountingMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) - 12, 0)
+                            AND DepartmentName = 'NEW')
+                    GROUP BY Vin, StoreHyperion, AccountingMonth, StoreName, VehicleMakeName
+                ) Q2
+                LEFT JOIN (
+                    SELECT 
+                        HYPERION_ID,
+                        CASE 
+                            WHEN MAN_NAME IN ('Chevrolet', 'GMC', 'Cadillac') THEN 'GM'
+                            WHEN MAN_NAME = 'Dodge' THEN 'Chrysler'
+                            WHEN MAN_NAME = 'Lincoln-Mercury' THEN 'Ford'
+                            WHEN MAN_NAME = 'Mercedes' THEN 'Mercedes-Benz'
+                            WHEN MAN_NAME IN ('Jaguar', 'Land Rover') THEN 'JLR'
+                            ELSE MAN_NAME
+                        END AS Brand
+                    FROM NDDUsers.vHyperionDetail
+                    WHERE STORE_STATUS = 'OPEN'
+                        --AND REGION = 'DEALERSHIP'
+                        AND ENTITY_NAME NOT LIKE '%Waymo%'
+                        AND ENTITY_NAME NOT LIKE '%WBYC%'
+                        AND HYP_TYPE = 'Store'
+                ) Q1 ON Q1.HYPERION_ID = Q2.StoreHyperion
+            ) AS SQ2
+            GROUP BY AccountingMonth, StoreHyperion, StoreName, Brand
+            HAVING SUM(SoldCount) <> 0
+        ) AS SQ
+        WHERE Brand NOT IN ('Lamborghini', 'Bentley', 'Aston Martin')
+        GROUP BY AccountingMonth, Hyperion, StoreName, Brand;
     """
 
     try:
@@ -421,6 +421,7 @@ def Update_BPU_File():
 
     except Exception as e:
         print("❌ Connection failed:", e)
+
 
     # Open file and process macro/Sql
     BPU_File = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Brand_President_Tracker\BP_Tracker.xlsm'
