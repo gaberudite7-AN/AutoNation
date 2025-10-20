@@ -102,146 +102,51 @@ def click_image_with_opencv_and_pyautogui(image_path, confidence=0.95, grayscale
 
 def Update_DOC_AND_BUDGET_file():
 
-    # Setup Chrome options
-    chrome_options = uc.ChromeOptions()
-    # chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
-
-    # Paths
-    chrome_driver_path = r"C:\Development\Chrome_Driver\chromedriver-win64\chromedriver.exe"
-    downloads_folder = r"C:\Users\BesadaG\Downloads"
-    filename = f"Build.ica"
-    destination = r"C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Brand_President_Tracker\Build.ica"
-
-    # Target URL
-    url = "https://www.dealercentral.net/Pages/home.aspx"
-
-    # Start browser
-    try:
-        driver = uc.Chrome(
-            driver_executable_path=chrome_driver_path,
-            options=chrome_options,
-            use_subprocess=True
-        )
-
-        driver.set_page_load_timeout(20)
-        driver.get(url)
-
         # Credentials
         username = "besadag"
         password = "T0ttenh@mG-DZ@ndy10!"
+        DOC_AND_BUDGET_file_path = r'W:\Corporate\Inventory\Reporting\Brand President Tracker\DATA SOURCE FILES ESSBASE\DOC AND BUDGET.xlsb'
 
-        # Login
-        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "signInControl_UserName"))).send_keys(username)
-        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "signInControl_password"))).send_keys(password)
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "signInControl_login"))).click()
+        # Need to open up workbook for Macro
+        app = xw.App(visible=True)
+        Doc_and_Budget_wb = app.books.open(DOC_AND_BUDGET_file_path)
+        # Wait for file to open
         time.sleep(5)
- 
-        time.sleep(5)
 
-        # Click EPM - Excel 2019
-        download_button = driver.find_element(By.LINK_TEXT, "EPM - Excel 2019")
-        download_button.click()
-        print(f"EPM Clicked. Waiting for file to download...")
-        time.sleep(15)
-
-        # Open source file and interact with it using PyAutoGUI or AUtoIT
-        source_file = os.path.join(downloads_folder, filename)
-        print("Opening up file")
-        os.startfile(source_file)
-        time.sleep(30) # wait for excel to open
-
-        # Simulate click file, open, open recent...
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Click_File.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.95, grayscale=True)
-        time.sleep(2)
-        
-        # Simulate click file, open, open recent...
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Recent_DOC_And_Budget_Click2.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.85, grayscale=True)
-        time.sleep(3)
-
-
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Click_Smart_View.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.85, grayscale=True)
-        time.sleep(3)
-
+        # Select specific cell (e.g., 'B2') and input Doc_Input
         # Adjust Month, type in current month
         current_month = datetime.now().strftime('%b')
-        print(current_month)
-
-        yesterday = datetime.now() - timedelta(1)
+        yesterday = datetime.now() - timedelta(days=1)  # Yesterday's date
         Doc_Input = "DOCFcst" + str(yesterday.day)
         print(Doc_Input)
+        sheet = Doc_and_Budget_wb.sheets[0]  # Adjust if not the first sheet
+        sheet.range('F3').select()
+        sheet.range('F3').value = Doc_Input
+        time.sleep(1)
+        sheet.range('F8').select()
+        sheet.range('F8').value = current_month
+        time.sleep(1)
+        sheet.range('G8').value = current_month
+        time.sleep(1)
 
-        # Click Docfcst and adjust current day
-        pyautogui.click(x=675, y=265)
-        time.sleep(2)
-        pyautogui.write(Doc_Input)
-        # Click Docfcst go to month with pyautogui
-        pyautogui.click(x=675, y=400)
-        time.sleep(2)
-        pyautogui.write(current_month)
-        # Click Budget with pyautogui
-        time.sleep(2)
-        pyautogui.click(x=1100, y=400)
-        time.sleep(2)
-        pyautogui.write(current_month)
-                
-        # # Escape
-        time.sleep(2)
-        pyautogui.press('esc')
-        pyautogui.click(x=200, y=400) 
+        # Bring Excel window to foreground
+        excel_windows = [w for w in gw.getWindowsWithTitle('DOC AND BUDGET') if w.visible]
+        if excel_windows:
+            excel_windows[0].activate()
+            time.sleep(1)
 
-        "Utilize OpenCV to more accurately find images"
+        # Click Smart View ribbon button by coordinates (example: x=300, y=120)
+        pyautogui.click(2656, 61)
+        time.sleep(1)
+
         # Click Refresh button        
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Click_Refresh.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.95, grayscale=True)
+        pyautogui.click(2293, 101)
+        time.sleep(1)
 
-        # Step 2: Wait a moment for the field to activate
-        time.sleep(5)
-
-        # Step 3: Type the password
-        pyautogui.write('T0ttenh@mG-DZ@ndy10!', interval=0.1)
-        time.sleep(2)
-
-        "Utilize OpenCV to more accurately find images" 
-        # Click Connect       
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Click_Connect.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.95, grayscale=True)
-        time.sleep(3) 
-        # Click File (before saving)
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Click_File.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.95, grayscale=True)
-        time.sleep(3) 
-        # Click Save
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Click_Save.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.95, grayscale=True)
-        time.sleep(3)
-        # Click File (before closing)
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Click_File.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.95, grayscale=True)
-        time.sleep(3) 
-        # Click Close
-        image_path = r'C:\Development\.venv\Scripts\Python_Scripts\Web_Scraping\Images_tesseract\Click_Close.png'
-        click_image_with_opencv_and_pyautogui(image_path, confidence=0.95, grayscale=True)
-        time.sleep(3)      
-
-    finally:
-        print("Completed auto-update of Essbase data from the visual")
-        # Patch the __del__ method to suppress the OSError
-        def safe_del(self):
-            try:
-                self.quit()
-            except Exception:
-                pass  # Silently ignore all errors
-        uc.Chrome.__del__ = safe_del
-    
-    return
+        # After refresh, save and close the workbook
+        Doc_and_Budget_wb.save()
+        Doc_and_Budget_wb.close()
+        app.quit()
 
 def Update_BPU_File():
 
@@ -426,8 +331,7 @@ def Update_BPU_File():
     DOC_AND_BUDGET_file = r'W:\Corporate\Inventory\Reporting\Brand President Tracker\DATA SOURCE FILES ESSBASE\DOC AND BUDGET.xlsx'
     app = xw.App(visible=True)
     wb = app.books.open(BPU_File)
-    # Need to open up workbook for Macro
-    # Doc_and_Budget_wb = app.books.open(DOC_AND_BUDGET_file)
+
 
     NDD_tab = wb.sheets['Data']
     NDD_tab.range("A6:M10000").clear_contents()

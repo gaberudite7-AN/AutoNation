@@ -132,6 +132,8 @@ class AllocationMapper:
                     model = "XC90 HYBRID"
                 else:
                     model = "XC90"
+            elif make == "SUBARU" and "CROSSTREK" in model:
+                model = "XV CROSSTREK"
             return f"{make}_{model}"
         
         # Run function to create abbreviated model names
@@ -162,7 +164,11 @@ class AllocationMapper:
             style = row["STYLENAME"].strip().upper()
             if make == "LEXUS":
                 style_main = " ".join(style.split()[:2])# For Lexus, use Model and StyleName together (Styename contains model already)
-                return f"{make}_{style_main}"
+                if "450" in style:
+                    return f"{make}_{model} 450H"
+                else:
+                    return f"{make}_{style_main}"
+
             else:
                 return None
 
@@ -292,6 +298,24 @@ class AllocationMapper:
                     else:
                         return "2368 {RAM_PROMASTER}"
                 return None
+            elif make == "BMW":
+                if "1" in model:
+                    return "1352 {BMW_1 SERIES}"
+                elif "2" in model:
+                    return "1353 {BMW_2 SERIES}"
+                elif "3" in model: 
+                    return "1354 {BMW_3 SERIES}"
+                elif "4" in model:
+                    return "1355 {BMW_4 SERIES}"
+                elif "5" in model:
+                    return "1356 {BMW_5 SERIES}"
+                elif "6" in model:
+                    return "1357 {BMW_6 SERIES}"
+                elif "7" in model:
+                    return "1359 {BMW_7 SERIES}"
+                elif "8" in model: 
+                    return "1360 {BMW_8 SERIES}"
+
         # Apply only to relevant makes
         relevant_makes = ["CHEVROLET", "GMC", "FORD", "RAM", "TOYOTA"]
         general_mask = sales_inventory_df["MAKE"].str.upper().isin(relevant_makes)
@@ -398,6 +422,16 @@ class AllocationMapper:
             model = row["MODEL"].strip().upper()
             model_id = row.get("MODEL_ID", "").strip().upper()
             abbr = model_abbr.get(model, model)
+            # Wrangler special handling
+            if make == "JEEP" and "WRANGLER" in model:
+                # Check for 2DR or 4DR in model_id or style
+                style = row.get("STYLENAME", "").upper()
+                if "2DR" in model_id or "2DR" in style or "2 DOOR" in style or "2-DOOR" in style:
+                    return f"{make}_2DR WRANGL"
+                elif "4DR" in model_id or "4DR" in style or "4 DOOR" in style or "4-DOOR" in style:
+                    return f"{make}_4DR WRANGL"
+                else:
+                    return f"{make}_WRANGL"
             if make == "JEEP" and model_id in model_codes:
                 code = model_codes[model_id]
                 return f"{make}_{abbr} {code}"
@@ -633,3 +667,5 @@ if __name__ == "__main__":
     # Jeeps - need to lookup (wrangler and gladiator)
     # 1517 for suburb
     # tahoe and promaster
+
+    # Fix the numbers it is allocating too we errored out before publishing 

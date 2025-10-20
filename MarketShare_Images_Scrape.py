@@ -241,7 +241,7 @@ def Create_Images():
 
 
         # Functions to get images from Weekly Pages 1 and Page 2
-        export_markets_to_pdf(driver, wait, "Weekly Market Summary PG2")
+        #export_markets_to_pdf(driver, wait, "Weekly Market Summary PG2")
         export_markets_to_pdf(driver, wait, "Weekly Market Summary")
 
     finally:

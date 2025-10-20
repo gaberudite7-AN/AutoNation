@@ -13,7 +13,8 @@ conn = snowflake.connector.connect(
     schema = "FINANCIAL_PLANNING_ANALYTICS"
 )
 
-# Create a cursor object
+# We will be pulling the latest data from snowflake for Cube Historical and YTD. 
+# Snowflake query is dynamic and will update latest daily file and append to historical while making the necessary transformations.
 cur = conn.cursor()
 YTD_query = """
 select * from workspaces.financial_planning_analytics.Cube_YTD
