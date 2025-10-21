@@ -255,10 +255,129 @@ def Refresh_MarketShare_Excels():
 
     return
 
+def Update_Industry_UrbanScience():
+
+    # Setup Chrome options
+    chrome_options = uc.ChromeOptions()
+    # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
+
+    # Paths
+    chrome_driver_path = r"C:\Development\Chrome_Driver\chromedriver-win64\chromedriver.exe"
+    downloads_folder = r"C:\Users\BesadaG\Downloads"
+    #destination_folder = r"W:\Corporate\Inventory\Urban Science\Historics"
+
+    destination_folder = r"\\us1.autonation.com\workgroups\Corporate\Inventory\Urban Science"
+
+    # Target URL
+    url = "https://na-ftp.urbanscience.com/ThinClient/WTM/public/index.html#/login"
+
+    # Get today's date in the format YYYYMMDD
+    today_str = datetime.today().strftime('%Y%m%d')
+
+    # Construct the expected filename
+    filename = f"AutoNation_SalesFile_NationalSales_{today_str}.txt"
+    filename_rename = "AutoNation_SalesFile_NationalSales.txt"
+
+    # Start browser
+    try:
+        # use downloaded chrome path
+        driver = uc.Chrome(
+            driver_executable_path=chrome_driver_path,
+            options=chrome_options,
+            use_subprocess=True
+        )
+
+        driver.set_page_load_timeout(20)
+        driver.get(url)
+
+        # Credentials for logging in
+        username = "Stuartm"
+        password = "f$w8Q)$z%pt)"
+
+        # Login
+        time.sleep(5)
+        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "inputUsername"))).send_keys(username)
+        time.sleep(1)
+        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "password"))).send_keys(password)
+        time.sleep(1)
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "signIn"))).click()
+        time.sleep(10)
+        
+        # Construct the expected filename
+        filename = f"AutoNation_SalesFile_NationalSales_Make.txt"
+        
+        now = datetime.now()
+        
+        if now.weekday() == 2: # if its wednesday...process the make file
+            print("Day is wednesday..downloading make file")            
+            
+            # Wait for the row containing the filename
+            row = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, f"//tr[.//div[@class='table-name' and normalize-space(text())='{filename}']]")
+                )
+            )
+
+            # Scroll the row into view
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", row)
+            time.sleep(1)
+
+            # Inside that row, find the checkbox and click it
+            checkbox = row.find_element(By.XPATH, ".//input[@type='checkbox']")
+            checkbox.click()
+            print(f"{filename} clicked...")
+            time.sleep(2)
+
+            # Click download
+            download_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(@class, 'toolbar-button') and .//span[text()='Download']]"))
+            )
+            download_button.click()
+            print(f"Download button clicked. Waiting for file to download...")
+            time.sleep(30)            
+
+            filename = "AutoNation_SalesFile_NationalSales_Make.txt"
+
+            # Move latest MAKE file to destination folder with same name
+            source_file = os.path.join(downloads_folder, filename)
+            destination_file = os.path.join(destination_folder, filename)
+
+            if os.path.exists(source_file):
+                shutil.move(source_file, destination_file)
+                print(f"Successfully moved Make file to: {destination_file}")
+            else:
+                raise FileNotFoundError(f"Expected file not found: {source_file}")
+        else:
+            print("Day is not wednesday, finishing up Web Scraping function.")
+    except Exception as e:
+        error_log_path = os.path.join(destination_folder, "UrbanScienceScrape_error_log.txt")
+        with open(error_log_path, "w") as f:
+            f.write(traceback.format_exc())
+        print(f"An error occurred. Details written to {error_log_path}")
+
+    finally:
+        if 'driver' in locals():
+            def safe_del(self):
+                try:
+                    self.quit()
+                except Exception:
+                    pass  # Silently ignore all errors
+            uc.Chrome.__del__ = safe_del   
+    
+    return
+
+
+
 #run function
 if __name__ == '__main__':
 
     #Update_Historicals()    
-    Update_Daily_UrbanScience()
+    #Update_Daily_UrbanScience()
+    Update_Industry_UrbanScience()
     #Refresh_MarketShare_Excels()
 # %%
