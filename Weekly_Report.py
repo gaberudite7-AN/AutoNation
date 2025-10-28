@@ -159,6 +159,27 @@ def Download_PWB():
         
         return
 
+
+def delete_rows_below(sheet, header_row: int, data_row_count: int):
+    """
+    Delete entire rows below the written table on `sheet`.
+    header_row: row number of the header (usually 1)
+    data_row_count: number of data rows written (df.shape[0])
+    """
+    try:
+        used_range = sheet.api.UsedRange
+        used_first = used_range.Row
+        used_last = used_first + used_range.Rows.Count - 1
+        # last row we wrote (header occupies header_row)
+        written_last = header_row + data_row_count
+        start_delete = written_last + 1
+        if used_last >= start_delete:
+            rng = sheet.api.Range(f"A{start_delete}:A{used_last}")
+            rng.EntireRow.Delete()
+    except Exception:
+        # best-effort only; ignore COM errors
+        pass
+
 def Update_PWB_Data():
     
     PWB_Data_folder = r"W:\Corporate\Inventory\Weekly Reporting Package\PWB_Data"
@@ -216,6 +237,9 @@ def Update_PWB_Data():
     # Replace PWB worksheet with updated data
     PWB_sht.clear_contents()
     PWB_sht.range('A1').options(index=False).value = combined_df
+
+    # remove any leftover used-range rows below what we just wrote
+    delete_rows_below(PWB_sht, header_row=1, data_row_count=combined_df.shape[0])
 
     # Save and close the excel document and any other open instances
     PWB_wb.save(PWB_file)

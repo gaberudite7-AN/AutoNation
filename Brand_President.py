@@ -317,7 +317,7 @@ def Update_BPU_File():
     try:
         with pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server};'
-                'SERVER=S2WPPSQL03NDD;'
+                'SERVER=nddprddb01,48155;'
                 'DATABASE=NDD_ADP_RAW;'
                 'Trusted_Connection=yes;'
         ) as conn:

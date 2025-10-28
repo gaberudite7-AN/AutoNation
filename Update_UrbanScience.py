@@ -13,6 +13,7 @@ import numpy as np
 from datetime import datetime
 from openpyxl import load_workbook
 import xlwings as xw
+import csv
 
 
 def Move_Current_to_Historics():
@@ -40,7 +41,7 @@ def Move_Current_to_Historics_Industry():
 
     # Get last week's date as we are moving current that was pulled last week to historics with yesterdays date
     yesterday = datetime.today() - timedelta(days=7)   
-    historics_folder = r"\\us1.autonation.com\workgroups\Corporate\Inventory\Urban Science\Historics"
+    historics_folder = r"\\us1.autonation.com\workgroups\Corporate\Inventory\Urban Science\Historics\Industry"
     date_str = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
     file_to_move = r"\\us1.autonation.com\workgroups\Corporate\Inventory\Urban Science\AutoNation_SalesFile_NationalSales_Make.txt"
     filename_modified = f"AutoNation_SalesFile_NationalSales_Make_{date_str}.txt"
@@ -255,7 +256,10 @@ def Refresh_MarketShare_Excels():
 
     return
 
-def Update_Industry_UrbanScience():
+def Update_Make_File():
+
+    # Move Make file to historicals
+    Move_Current_to_Historics_Industry()
 
     # Setup Chrome options
     chrome_options = uc.ChromeOptions()
@@ -342,14 +346,21 @@ def Update_Industry_UrbanScience():
             time.sleep(30)            
 
             filename = "AutoNation_SalesFile_NationalSales_Make.txt"
+            file_name_rename = f"AutoNation_SalesFile_NationalSales_Make_{today_str}.txt"
 
             # Move latest MAKE file to destination folder with same name
             source_file = os.path.join(downloads_folder, filename)
             destination_file = os.path.join(destination_folder, filename)
 
+
             if os.path.exists(source_file):
                 shutil.move(source_file, destination_file)
                 print(f"Successfully moved Make file to: {destination_file}")
+                shutil.copy(destination_file, rf"W:\Corporate\Inventory\Urban Science\Historics\Industry\{file_name_rename}")
+                print("Successfully copied today's make file to Industry for Snowflake load processing")
+                time.sleep(2)
+                convert_textfiles_to_csv()
+                print("Successfully converted Industry text files to CSV format")
             else:
                 raise FileNotFoundError(f"Expected file not found: {source_file}")
         else:
@@ -371,6 +382,40 @@ def Update_Industry_UrbanScience():
     
     return
 
+def convert_textfiles_to_csv():
+
+    # Mode: 'copy' = copy/rename .txt -> .csv (keeps file contents unchanged)
+    #       'parse' = read lines, split by commas and write proper CSV rows
+    mode = 'copy'  # set to 'parse' if you want to split lines into CSV cells
+
+    # Define source and destination folders
+    source_folder = r'W:\Corporate\Inventory\Urban Science\Historics\Industry'
+    destination_folder = r'W:\Corporate\Inventory\Urban Science\Historics\Industry\CSV_Formatted'
+
+    # Create destination folder if it doesn't exist
+    os.makedirs(destination_folder, exist_ok=True)
+
+    # Iterate through all .txt files in the source folder
+    for filename in os.listdir(source_folder):
+        if filename.endswith('.txt'):
+            txt_path = os.path.join(source_folder, filename)
+            csv_filename = os.path.splitext(filename)[0] + '.csv'
+            csv_path = os.path.join(destination_folder, csv_filename)
+
+            if mode == 'copy':
+                # Copy the file and give it a .csv extension (same content as .txt)
+                shutil.copy2(txt_path, csv_path)
+            else:
+                # Read the text file and write to CSV (split by commas)
+                with open(txt_path, 'r', encoding='utf-8-sig') as txt_file:
+                    lines = txt_file.readlines()
+
+                with open(csv_path, 'w', newline='', encoding='utf-8') as csv_file:
+                    writer = csv.writer(csv_file)
+                    for line in lines:
+                        writer.writerow([cell.strip() for cell in line.strip().split(',')])
+
+    print("All .txt files have been converted to .csv and copied to the destination folder.")
 
 
 #run function
@@ -378,6 +423,7 @@ if __name__ == '__main__':
 
     #Update_Historicals()    
     #Update_Daily_UrbanScience()
-    Update_Industry_UrbanScience()
+    #Update_Industry_UrbanScience()
+    Update_Make_File()
     #Refresh_MarketShare_Excels()
 # %%
