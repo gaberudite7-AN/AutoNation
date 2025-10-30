@@ -88,8 +88,6 @@ class AllocationMapper:
                 model = "E-TRANSIT"
             elif make == "TOYOTA" and "PRIUS" in model:
                 model = "PRIUS"
-            elif make == "CHEVROLET" and "CORVETTE" in model:
-                model = "CORVET"
             elif make == "JEEP" and "GRAND WAGONEER" in model:
                 model = "GRAND WAGONEER"
             # May need to adjust this??
@@ -113,6 +111,14 @@ class AllocationMapper:
                 model = "CT5"
             elif make == "CADILLAC" and "CT6" in model:
                 model = "CT6"
+            elif make == "CADILLAC" and "ESCALADE ESC" in model or "ESCALADE ESV" in model:
+                model = "ESCESV"
+            elif make == "CADILLAC" and "ESCALADE IQL" in model or "ESCALADE IQ" in model:
+                model = "ESCIQ"
+            elif make == "CADILLAC" and "LYRIQ" in model:
+                model = "LYRIQ"
+            elif make == "CADILLAC" and "OPTIQ" in model:
+                model = "OPTIQ"
             elif make == "LAND ROVER" and "DEFENDER" in model:
                 model = "NEW DEFENDER"
             elif make == "LAND ROVER" and "DISCOVERY" in model:
@@ -166,6 +172,17 @@ class AllocationMapper:
                 style_main = " ".join(style.split()[:2])# For Lexus, use Model and StyleName together (Styename contains model already)
                 if "450" in style:
                     return f"{make}_{model} 450H"
+                elif "350" in style:
+                    return f"{make}_{model} 350H"
+                elif "500" in style:
+                    if "IS" in style:
+                        return f"{make}_{model} 500"
+                    else:
+                        return f"{make}_{model}500"
+                elif "550" in style:
+                    return f"{make}_{model} 550H"
+                elif "RX" in style: 
+                    return f"{make}_{model}"
                 else:
                     return f"{make}_{style_main}"
 
@@ -194,7 +211,7 @@ class AllocationMapper:
             # Define model groups (all uppercase for matching)
             silverado_models = (
                 "SILVERADO 1500", "SILVERADO 2500", "SILVERADO 2500HD",
-                "SILVERADO 3500", "SILVERADO 3500HD", "SILVERADO 3500HD CC"
+                "SILVERADO 3500", "SILVERADO 3500HD", "SILVERADO 3500HD CC", "SILVERADO EV"
             )
             ford_models = (
                 "SUPER DUTY F-250 SRW", "SUPER DUTY F-250 DRW", "SUPER DUTY F-350 SRW", "SUPER DUTY F-350 DRW", "SUPER DUTY F-450 SRW", "SUPER DUTY F-450 DRW", 
@@ -216,6 +233,8 @@ class AllocationMapper:
             if make == "CHEVROLET" and model in silverado_models and "CREW CAB" in style:
                 if "HD" in model:
                     return "1466 {Chevrolet_CHDCRW}"
+                elif "EV" in model:
+                    return "2801 {Chevrolet_CLDEVC}"
                 else:
                     return "1475 {Chevrolet_CLDCRW}"
             # Silverado Double Cab
@@ -228,8 +247,17 @@ class AllocationMapper:
             elif make == "CHEVROLET" and model in silverado_models and "REG" in style:
                 if "HD" in model:
                     return "1467 {Chevrolet_CHDREG}"
+                elif "EV" in model:
+                    return "2801 {Chevrolet_CLDEVC}"
                 else:
                     return "1477 {Chevrolet_CLDREG}"
+            elif make == "CHEVROLET" and "CORVETTE" in model:
+                if "E-RAY" in style or "E RAY" in style:
+                    model = "CORERY"
+                if "Z06" in style:
+                    model = "CORZ06"
+                else:
+                    model = "CORVET"
             # GMC Crew Cab
             elif make == "GMC" and model in gmc_models and "CREW CAB" in style:
                 if "HD" in model:
@@ -296,7 +324,7 @@ class AllocationMapper:
                     if "CITY" in model:
                         return "2371 {Ram_PROMASTER CITY}"
                     else:
-                        return "2368 {RAM_PROMASTER}"
+                        return "2370 {RAM_PROMASTER}"
                 return None
             elif make == "BMW":
                 if "1" in model:
@@ -399,6 +427,11 @@ class AllocationMapper:
         df = self.normalize_columns(df)
         allocation_group_df = self.normalize_columns(allocation_group_df)
 
+        # Ensure string values (avoid NaN/None causing .strip()/ .upper() failures)
+        for col in ["MAKE", "MODEL", "MODEL_ID", "TRIM", "STYLENAME"]:
+            if col in df.columns:
+                df[col] = df[col].fillna("").astype(str)
+
         # Extract Make_ModelID from allocation group file
         allocation_group_df["MAKE_MODEL_ID"] = allocation_group_df.iloc[:,0].str.extract(r"\{(.+?)\}")[0].str.upper()
         allocation_map = dict(zip(allocation_group_df["MAKE_MODEL_ID"], allocation_group_df.iloc[:,0]))
@@ -421,11 +454,18 @@ class AllocationMapper:
             make = row["MAKE"].strip().upper()
             model = row["MODEL"].strip().upper()
             model_id = row.get("MODEL_ID", "").strip().upper()
+            trim = row.get("TRIM", "").strip().upper()
+            style = row.get("STYLENAME", "").upper()
             abbr = model_abbr.get(model, model)
             # Wrangler special handling
             if make == "JEEP" and "WRANGLER" in model:
+                if "SAHARA" in trim:
+                    return f"{make}_2DR SHR"
+                if "SPORT" in trim:
+                    return f"{make}_WRNGLR SPR"
+                if "RUBICON" in trim:
+                    return f"{make}_WRNGL RBCN"
                 # Check for 2DR or 4DR in model_id or style
-                style = row.get("STYLENAME", "").upper()
                 if "2DR" in model_id or "2DR" in style or "2 DOOR" in style or "2-DOOR" in style:
                     return f"{make}_2DR WRANGL"
                 elif "4DR" in model_id or "4DR" in style or "4 DOOR" in style or "4-DOOR" in style:

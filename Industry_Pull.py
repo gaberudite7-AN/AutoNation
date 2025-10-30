@@ -3,6 +3,62 @@ import shutil
 import snowflake.connector
 import pandas as pd
 import xlwings as xw
+from pathlib import Path
+from snowflake.connector.pandas_tools import write_pandas
+
+def find_latest_file_in_dir(directory):
+    p = Path(directory)
+    if not p.exists() or not p.is_dir():
+        return None
+    files = [f for f in p.iterdir() if f.is_file()]
+    if not files:
+        return None
+    return max(files, key=lambda f: f.stat().st_mtime)
+
+def Industry_Load():
+    # Load latest Industry data to Snowflake
+    # Connect to Snowflake
+    conn = snowflake.connector.connect(
+        account = "HTGXNLD-AN",
+        user = "besadag@autonation.com",
+        authenticator = "externalbrowser",
+        role = "FINANCIAL_PLANNING_ANALYTICS_ANALYST",
+        warehouse = "FINANCIAL_PLANNING_ANALYTICS_WH",
+        database = "WORKSPACES",
+        schema = "FINANCIAL_PLANNING_ANALYTICS"
+    )
+
+    # Grab most recent Industry file
+    Industry_File_path = r'W:\Corporate\Inventory\Urban Science\Historics\Industry\CSV_Formatted'
+    latest_file = find_latest_file_in_dir(Industry_File_path)
+    if latest_file is None:
+        print("No files found.")
+        return
+    print("Latest file found:", latest_file)
+
+    # Load the latest file into a DataFrame
+    df = pd.read_csv(latest_file)
+
+    # Optional: normalize column names to match Snowflake (uppercase)
+    df.columns = [c.upper() for c in df.columns]
+
+    # Use write_pandas to upload/appended data to Snowflake table.
+    try:
+        success, nchunks, nrows, _ = write_pandas(
+            conn,
+            df,
+            table_name="URBAN_SCIENCE_INDUSTRY",
+            database="WORKSPACES",
+            schema="FINANCIAL_PLANNING_ANALYTICS"
+        )
+        if success:
+            print(f"Data appended successfully: {nrows} rows in {nchunks} chunks.")
+        else:
+            print("write_pandas reported failure.")
+    finally:
+        conn.close()
+
+    print("Data loaded successfully.")
 
 def Update_Industry_UrbanScience():
     # Connect to Snowflake
@@ -144,4 +200,8 @@ def Update_Industry_UrbanScience():
         conn.close()
 
 if __name__ == "__main__":
+    
+    # Load latest make csv file to snowflake
+    Industry_Load()
+    # Update Urban Science Industry Excel
     Update_Industry_UrbanScience()
