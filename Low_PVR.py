@@ -31,9 +31,7 @@ def Update_LowPVR_Report():
     # Run refresh macro
     Run_Macro = LowPVR_wb.macro("Refresh_Report")
     Run_Macro()
-    
-    # Notify when complated
-    time.sleep(120)
+    time.sleep(600)  # Wait for 10 minutes to ensure macro completes
 
     # Save and close the excel document(s)    
     LowPVR_wb.save()

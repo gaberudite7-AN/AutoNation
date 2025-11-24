@@ -86,6 +86,8 @@ class AllocationMapper:
                 model = "TRANSIT"            
             elif make == "FORD" and "E-TRANSIT" in model:
                 model = "E-TRANSIT"
+            elif make == "FORD" and "EXPLORER" in model:
+                model = "EXPLORER"
             elif make == "TOYOTA" and "PRIUS" in model:
                 model = "PRIUS"
             elif make == "JEEP" and "GRAND WAGONEER" in model:
@@ -105,6 +107,8 @@ class AllocationMapper:
                     model = "YKN"
             elif make == "MAZDA" and "HATCHBACK" in model:
                 model = "MAZDA3 HB"
+            elif make == "MAZDA" and "SEDAN" in model:
+                model = "MAZDA3 SDN"
             elif make == "CADILLAC" and "CT4" in model:
                 model = "CT4"
             elif make == "CADILLAC" and "CT5" in model:
@@ -179,6 +183,8 @@ class AllocationMapper:
                         return f"{make}_{model} 500"
                     else:
                         return f"{make}_{model}500"
+                elif "500H" in style:
+                    return f"{make}_{model} 500H"
                 elif "550" in style:
                     return f"{make}_{model} 550H"
                 elif "RX" in style: 
@@ -309,6 +315,9 @@ class AllocationMapper:
                     return "2453 {Toyota_COROLLA HYBRID}"
                 else:
                     return "2451 {Toyota_COROLLA}"
+            # Toyota 4Runner I-Force Max
+            elif make == "TOYOTA" and model == "4RUNNER I-FORCE MAX":
+                return "2842 {Toyota_4RUNNER Hybrid}"
             elif make == "RAM":
                 if "1500" in model:
                     return "2361 {Ram_CREWPRM}"

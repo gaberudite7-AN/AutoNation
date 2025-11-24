@@ -345,5 +345,6 @@ def Update_Referral():
 
 if __name__ == '__main__':
     
-    # Download_sharepoint_file()
+    Download_sharepoint_file()
+    time.sleep(5)
     Update_Referral()

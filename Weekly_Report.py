@@ -121,7 +121,7 @@ def Download_PWB():
         # Click the "Continue" button after entering email or password
         continue_button = wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9")))
         continue_button.click()
-        time.sleep(15) # wait for site data to load
+        time.sleep(20) # wait for site data to load
 
         # Click the "Yes" button on the "Stay signed in?" prompt
         # yes_button = wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9")))
@@ -133,7 +133,7 @@ def Download_PWB():
             EC.element_to_be_clickable((By.XPATH, '/html/body/app-root/div/div/main/app-home/div/app-chart/img'))
         )
         download_button.click()
-        time.sleep(15)  # Wait for download to complete
+        time.sleep(20)  # Wait for download to complete
 
         # Move latest file to destination folder with adjusted name
         source_file = os.path.join(downloads_folder, filename)

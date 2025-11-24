@@ -383,5 +383,7 @@ def BP_Tracker_Email():
 if __name__ == '__main__':
     #Process_Daily_Sales_File()
     #Update_DOC_AND_BUDGET_file()
+    time.sleep(2)
     Update_BPU_File()
+    time.sleep(2)
     # BP_Tracker_Email()

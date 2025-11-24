@@ -58,6 +58,10 @@ class AllocationTracker:
         self.beginning_of_month_dt = months_back.replace(day=1)
         self.month_to_query = self.reference_date.month
         self.beginning_of_month = f"{self.beginning_of_month_dt.month}/1/{self.beginning_of_month_dt.year}"
+        last_week_date = (self.today - timedelta(days=7)).strftime("%m-%d-%Y")
+
+        # Make copy of current file with last weeks date
+        shutil.copy(self.allocation_tracker_file, self.base_path + rf'\Allocation_Tracker {last_week_date}.xlsm')
 
     def run_NDD_sql_queries(self, queries: dict):
         try:
@@ -1662,7 +1666,7 @@ class AllocationTracker:
 
 if __name__ == "__main__":
 
-    base_path = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Allocation_Tracker'
+    base_path = r'W:\Corporate\Inventory\BesadaG\Allocation_Tracker'
     tracker = AllocationTracker(base_path)
-    tracker.process_daily_sales_file()
+    #tracker.process_daily_sales_file()
     tracker.run_allocation_tracker()

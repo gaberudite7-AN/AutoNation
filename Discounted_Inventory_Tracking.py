@@ -46,64 +46,64 @@ def Discounted_Inventory_Tracking_Update():
     # Run SQL queries using SQL Alchemy and dump into Data tab
     
     Discounted_Inventory_Query = f"""
-select SnapshotDate,
-regionName,
-marketName,
-StoreName,
-Hyperion,
-StockType,
-Vin,
-Year,
-Make,
-Model,
-Trim,
-styleid,
-Stylename,
-DaysInInventory,
-PriceTier_93 as WebsitePrice,
-PriceTier_95 as EComPrice,
-MSRP,
-InvoicePrice,
-Balance,
-VinPriced,
-status,
-ExService,
-Loaner
+        select SnapshotDate,
+        regionName,
+        marketName,
+        StoreName,
+        Hyperion,
+        StockType,
+        Vin,
+        Year,
+        Make,
+        Model,
+        Trim,
+        styleid,
+        Stylename,
+        DaysInInventory,
+        PriceTier_93 as WebsitePrice,
+        PriceTier_95 as EComPrice,
+        MSRP,
+        InvoicePrice,
+        Balance,
+        VinPriced,
+        status,
+        ExService,
+        Loaner
 
-from [NDDUsers].[vInventory_Daily_Snapshot]
+        from [NDDUsers].[vInventory_Daily_Snapshot]
 
-where SnapshotDate in ('{last_week}', '{current_week}')
-and regionName <> 'AND Corporate Management'
-and marketName not in ('market 97','market 98')
-and StockType = 'new'
-and MSRP>0
-and Year>2021
-and ValidForAN=1
-and ValidForPricing=1
+        where SnapshotDate in ('{last_week}', '{current_week}')
+        and regionName <> 'AND Corporate Management'
+        and marketName not in ('market 97','market 98')
+        and StockType = 'new'
+        and MSRP>0
+        and Year>2021
+        and ValidForAN=1
+        and ValidForPricing=1
 
-group by SnapshotDate,
-regionName,
-marketName,
-StoreName,
-Hyperion,
-StockType,
-Vin,
-Year,
-Make,
-Model,
-Trim,
-styleid,
-Stylename,
-DaysInInventory,
-PriceTier_93,
-PriceTier_95,
-MSRP,
-InvoicePrice,
-Balance,
-VinPriced,
-status,
-ExService,
-Loaner
+        group by SnapshotDate,
+        regionName,
+        marketName,
+        StoreName,
+        Hyperion,
+        StockType,
+        Vin,
+        Year,
+        Make,
+        Model,
+        Trim,
+        styleid,
+        Stylename,
+        DaysInInventory,
+        PriceTier_93,
+        PriceTier_95,
+        MSRP,
+        InvoicePrice,
+        Balance,
+        VinPriced,
+        status,
+        ExService,
+        Loaner
     """
 
     try:
@@ -126,9 +126,7 @@ Loaner
 ################################################################################################################################
 
     # Read In Approved Over MSRP Key tab
-    Discounted_Inventory_OG = r"W:\Corporate\Inventory\Reporting\Discounted Inventory Tracking\2025\Discounted_Inventory_Tracking.xlsm"
-
-    Discounted_Inventory_File = r"C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Discounted_Inventory_Tracking\Discounted_Inventory_Tracking.xlsm"
+    Discounted_Inventory_File = r"W:\Corporate\Inventory\BesadaG\Discounted_Inventory_Tracking\Discounted_Inventory_Tracking.xlsm"
     app = xw.App(visible=True) 
     Discounted_Inventory_wb = app.books.open(Discounted_Inventory_File)
     Approved_Over_MSRP_Tab = Discounted_Inventory_wb.sheets['Approved Over MSRP Key']
@@ -160,10 +158,10 @@ Loaner
                     "MINI", "Porsche", "Mercedes-Benz", "MERCEDES-BENZ TRUCKS", 
                     "Mercedes Light Truck"]
 
-    # Apply logic ---------BROKE HERE
+    # Apply logic for avg discount: ignore website discount for luxury brands
     Discounted_Inventory_df['avg discount'] = np.where(
         Discounted_Inventory_df['Make'].isin(luxury_brands),
-        Discounted_Inventory_df['Website_Discount'],
+        Discounted_Inventory_df['Ecom_Discount'],
         Discounted_Inventory_df[['Website_Discount', 'Ecom_Discount']].mean(axis=1)
     )
     
@@ -217,7 +215,6 @@ Loaner
     Discounted_Inventory_wb_Sheet.range('A1').options(index=False).value = Discounted_Inventory_df
 
     # Run Macro
-    # Run Macro
     Run_Macro = Discounted_Inventory_wb.macro("ExecuteMacros")
     Run_Macro()
     Discounted_Inventory_wb.save()
@@ -236,8 +233,8 @@ Loaner
     full_filename1 = os.path.join(destination_folder, filename1)
     filename2 = f"Discounted Inventory Tracking {today} HC.xlsm"
     full_filename2 = os.path.join(destination_folder, filename2)
-    original_file_path1 = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Discounted_Inventory_Tracking\Discounted_Inventory_Tracking.xlsm'
-    original_file_path2 = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Discounted_Inventory_Tracking\Discounted_Inventory_Tracking_HC.xlsm'
+    original_file_path1 = r'W:\Corporate\Inventory\BesadaG\Discounted_Inventory_Tracking\Discounted_Inventory_Tracking.xlsm'
+    original_file_path2 = r'W:\Corporate\Inventory\BesadaG\Discounted_Inventory_Tracking\Discounted_Inventory_Tracking_HC.xlsm'
 
     # Copy Values for Discounted % Count then delete data sheet for space then make a HC and a historical copy with todays date
 
@@ -278,9 +275,9 @@ Loaner
     return
 
 def Discounted_Inventory_Tracking_Email():
-    
-    Discounted_Inventory_File = r"C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Discounted_Inventory_Tracking\Discounted_Inventory_Tracking.xlsm"
-    app = xw.App(visible=True) 
+
+    Discounted_Inventory_File = r"W:\Corporate\Inventory\BesadaG\Discounted_Inventory_Tracking\Discounted_Inventory_Tracking.xlsm"
+    app = xw.App(visible=True)
     Discounted_Inventory_wb = app.books.open(Discounted_Inventory_File)
     
     Run_Macro = Discounted_Inventory_wb.macro("Create_Discounted_Inventory_Tracking_Email")

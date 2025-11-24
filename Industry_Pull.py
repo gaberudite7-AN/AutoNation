@@ -2,6 +2,7 @@
 import shutil
 import snowflake.connector
 import pandas as pd
+import numpy as np
 import xlwings as xw
 from pathlib import Path
 from snowflake.connector.pandas_tools import write_pandas
@@ -43,22 +44,31 @@ def Industry_Load():
     df.columns = [c.upper() for c in df.columns]
 
     # Use write_pandas to upload/appended data to Snowflake table.
+    cur = conn.cursor()
     try:
-        success, nchunks, nrows, _ = write_pandas(
-            conn,
-            df,
-            table_name="URBAN_SCIENCE_INDUSTRY",
-            database="WORKSPACES",
-            schema="FINANCIAL_PLANNING_ANALYTICS"
-        )
-        if success:
-            print(f"Data appended successfully: {nrows} rows in {nchunks} chunks.")
-        else:
-            print("write_pandas reported failure.")
-    finally:
-        conn.close()
+        # Upload the CSV file to Snowflake internal stage
+        put_command = f"PUT 'file://{str(latest_file).replace(chr(92), '/')}' @%URBAN_SCIENCE_INDUSTRY"
+        cur.execute(put_command)
+        print("File uploaded to stage successfully")
 
-    print("Data loaded successfully.")
+        # Copy data from stage to table (append mode)
+        copy_command = """
+        COPY INTO URBAN_SCIENCE_INDUSTRY
+        FROM @%URBAN_SCIENCE_INDUSTRY
+        FILE_FORMAT = (TYPE = CSV SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"')
+        ON_ERROR = 'CONTINUE'
+        """
+        cur.execute(copy_command)
+        
+        # Get the number of rows loaded
+        result = cur.fetchone()
+        if result:
+            print(f"Data loaded successfully: {result[1]} rows inserted")
+    except Exception as e:
+        print(f"Error loading data: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
 def Update_Industry_UrbanScience():
     # Connect to Snowflake
@@ -168,6 +178,23 @@ def Update_Industry_UrbanScience():
         # Apply classification
         Industry_df['AN_Segment'] = Industry_df['AN_Brand'].apply(classify_brand)
 
+        # Formula for Max Date
+        max_date = Industry_df['FILEDATE'].max()
+        Industry_df['IsMaxDate'] = (Industry_df['FILEDATE'] == max_date).astype(int)
+
+        # Formula for Current Month
+        # Formula for Current Month
+        current_date = pd.Timestamp.now()
+        current_year = current_date.year
+        last_year = current_year - 1
+        current_month = current_date.month
+        print(f"Current month is {current_month}")
+        print(f"Current year is {current_year}")
+        Industry_df['IsCurrentMonth'] = np.where(
+            ((Industry_df['SALE_YEAR'] == current_year) | (Industry_df['SALE_YEAR'] == last_year)) & (Industry_df['SALE_MONTH'] == current_month),
+            1, 0
+        )
+
         # Open file and process macro/Sql
         Industry_File = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Market_Share\Industry\Urban_Industry_Data.xlsb'
         app = xw.App(visible=True)
@@ -190,10 +217,10 @@ def Update_Industry_UrbanScience():
         
         # Send a copy to archive
         Archive_File = r'C:\Users\BesadaG\OneDrive - AutoNation\PowerAutomate\Market_Share\Industry\Archive\Urban_Industry_Data_' + pd.Timestamp.now().strftime('%Y%m%d') + '.xlsb'
-        shutil.copy(Industry_File, Archive_File)
+        #shutil.copy(Industry_File, Archive_File)
 
         # Send a copy to W Drive
-        shutil.copy(Industry_File, r'W:\Corporate\Inventory\Reporting\JDPower Industry vs AN\Urban_Industry_Data.xlsb')
+        #shutil.copy(Industry_File, r'W:\Corporate\Inventory\Reporting\JDPower Industry vs AN\Urban_Industry_Data.xlsb')
 
     finally:
         cur.close()
@@ -202,6 +229,6 @@ def Update_Industry_UrbanScience():
 if __name__ == "__main__":
     
     # Load latest make csv file to snowflake
-    Industry_Load()
+    # Industry_Load()
     # Update Urban Science Industry Excel
     Update_Industry_UrbanScience()

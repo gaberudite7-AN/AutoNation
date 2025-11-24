@@ -79,7 +79,7 @@ def export_markets_to_pdf(driver, wait, page_label):
     Markets = [
         'MK01 - Southern CA', 'MK02 - Northern CA & NV', 'MK03 - WA & AZ',
         'MK04 - Colorado', 'MK05 - South TX', 'MK06 - Midwest & Northeast',
-        'MK07 - Southeast', 'MK08 - North-Central Fl', 'MK09 - South FL', 'MK10 - North TX'
+        'MK07 - Southeast', 'MK08 - North-Central FL', 'MK09 - South FL', 'MK10 - North TX'
     ]
 
     for market in Markets:
@@ -100,6 +100,13 @@ def export_markets_to_pdf(driver, wait, page_label):
 
             # Wait for the popup to appear
             popup = wait.until(EC.visibility_of_element_located((By.ID, popup_id)))
+
+            # # Click select all in order to (reset previous selection)
+            # slicer_item = wait.until(EC.element_to_be_clickable(
+            #     (By.XPATH, f"//div[@id='{popup_id}']//div[@class='slicerItemContainer' and @title='Select all']"))
+            # )
+
+            # slicer_item.click()
 
             # Click the desired option inside the AN Market popup
             slicer_item = wait.until(EC.element_to_be_clickable(
