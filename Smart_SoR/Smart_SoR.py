@@ -5,7 +5,7 @@ import os
 
 # Page configuration
 st.set_page_config(
-    page_title="Store Performance Q&A Bot",
+    page_title="SoR Q&A Bot",
     page_icon="📊",
     layout="wide"
 )
@@ -49,7 +49,7 @@ def answer_question(question):
     year_match = re.search(r'\b(20\d{2})\b', question)
     if year_match:
         year = int(year_match.group(1))
-        filtered = filtered[filtered['Year'] == year]
+        filtered = filtered[filtered['Year'].astype(int) == year]
     
     # Filter by store if mentioned (but not for "what store" questions)
     store_found = None
