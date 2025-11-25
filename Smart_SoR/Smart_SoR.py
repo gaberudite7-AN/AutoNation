@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import streamlit as st
+import os
 
 # Page configuration
 st.set_page_config(
@@ -12,7 +13,15 @@ st.set_page_config(
 # Load dataset
 @st.cache_data
 def load_data():
-    df = pd.read_csv(r"SOR_Test.csv")
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(script_dir, "SOR_Test.csv")
+    # Try to load the CSV
+    try:
+        df = pd.read_csv(csv_path)
+    except FileNotFoundError:
+    # Fallback: try loading from current directory
+        df = pd.read_csv("SOR_Test.csv")
     df.columns = df.columns.str.strip()
     return df
 
