@@ -214,10 +214,12 @@ with col2:
     st.markdown("<br>", unsafe_allow_html=True)
     ask_button = st.button("Ask", type="primary", use_container_width=True)
 
-# Process question
-if ask_button and user_question:
+# Process question - Modified to handle both button click and preset questions
+if (ask_button and user_question) or (st.session_state.current_question and not user_question):
+    question_to_process = user_question if user_question else st.session_state.current_question
+    
     with st.spinner("Analyzing..."):
-        answer = answer_question(user_question)
+        answer = answer_question(question_to_process)
         
         # Display answer in a nice format
         st.markdown("### Answer:")
@@ -227,7 +229,8 @@ if ask_button and user_question:
             st.success(answer)
         
         # Clear the preset question after use
-        st.session_state.current_question = ""
+        if st.session_state.current_question:
+            st.session_state.current_question = ""
 
 # Display data preview
 with st.expander("📋 View Data Preview"):
