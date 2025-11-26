@@ -351,12 +351,13 @@ def Update_Make_File():
             # Move latest MAKE file to destination folder with same name
             source_file = os.path.join(downloads_folder, filename)
             destination_file = os.path.join(destination_folder, filename)
+            industry_folder = r"W:\Corporate\Inventory\Urban Science\Historics\Industry"
 
 
             if os.path.exists(source_file):
                 shutil.move(source_file, destination_file)
                 print(f"Successfully moved Make file to: {destination_file}")
-                shutil.copy(destination_file, rf"W:\Corporate\Inventory\Urban Science\Historics\Industry\{file_name_rename}")
+                shutil.copy(destination_file, os.path.join(industry_folder, file_name_rename))
                 print("Successfully copied today's make file to Industry for Snowflake load processing")
                 time.sleep(2)
                 convert_textfiles_to_csv()

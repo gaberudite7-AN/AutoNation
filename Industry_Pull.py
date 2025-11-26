@@ -229,6 +229,6 @@ def Update_Industry_UrbanScience():
 if __name__ == "__main__":
     
     # Load latest make csv file to snowflake
-    # Industry_Load()
+    Industry_Load()
     # Update Urban Science Industry Excel
     Update_Industry_UrbanScience()
