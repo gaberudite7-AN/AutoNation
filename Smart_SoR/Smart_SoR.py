@@ -2,13 +2,139 @@ import pandas as pd
 import re
 import streamlit as st
 import os
+import base64
+
+# Get the directory where this script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+chatbot_image = os.path.join(script_dir, "chatbot.jpg")
+autonation_logo = os.path.join(script_dir, "AutoNation_Logo.png")
 
 # Page configuration
 st.set_page_config(
     page_title="SoR Q&A Bot",
-    page_icon="📊",
+    page_icon=chatbot_image,
     layout="wide"
 )
+
+# Custom CSS for styling
+def add_custom_css():
+    st.markdown("""
+        <style>
+        /* Main background */
+        .stApp {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            /* Or use an image: */
+            /* background-image: url('C:\\Development\\.venv\\Scripts\\Python_Scripts\\Smart_SoR\\AutoNation_Logo.png'); */
+            /* background-size: cover; */
+            /* background-attachment: fixed; */
+        }
+        
+        /* Sidebar styling */
+        [data-testid="stSidebar"] {
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+        
+        /* Main content area */
+        .main .block-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Title styling */
+        h1 {
+            color: #1f2937;
+            text-align: center;
+            font-weight: 700;
+        }
+        
+        /* Button styling */
+        .stButton>button {
+            background-color: #667eea;
+            color: white;
+            border-radius: 5px;
+            border: none;
+            padding: 0.5rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .stButton>button:hover {
+            background-color: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Expander styling */
+        .streamlit-expanderHeader {
+            background-color: #f3f4f6;
+            border-radius: 5px;
+        }
+        
+        /* Success message styling */
+        .stSuccess {
+            background-color: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        
+        /* Warning message styling */
+        .stWarning {
+            background-color: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        /* Dataframe styling */
+        .stDataFrame {
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        /* Input field styling */
+        .stTextInput>div>div>input {
+            border-radius: 5px;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .stTextInput>div>div>input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 1px #667eea;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+# Function to add a logo/image
+def add_logo(image_path, width=200):
+    """Add a logo or image to the app"""
+    try:
+        # For local images
+        if os.path.exists(image_path):
+            with open(image_path, "rb") as f:
+                data = base64.b64encode(f.read()).decode()
+            st.markdown(
+                f"""
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <img src="data:image/png;base64,{data}" width="{width}">
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            # For URL images
+            st.markdown(
+                f"""
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <img src="{image_path}" width="{width}">
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+    except Exception as e:
+        st.warning(f"Could not load image: {e}")
+
+
 
 # Load dataset
 @st.cache_data
@@ -197,8 +323,31 @@ def answer_question(question):
     
     return "Sorry, I couldn't understand that question. Try asking about specific columns like 'New Retail Units' or 'Used Total Deal Gross PVR'.", df
 
+# Apply custom CSS
+#add_custom_css()
+
+# Add logo
+script_dir = os.path.dirname(os.path.abspath(__file__))
+logo_path = os.path.join(script_dir, "AutoNation_Logo.png")
+add_logo(logo_path, width=250)
+
 # Streamlit UI
-st.title("📊 SoR Q&A Bot")
+# Streamlit UI - Add chatbot image to title
+if os.path.exists(chatbot_image):
+    with open(chatbot_image, "rb") as f:
+        chatbot_data = base64.b64encode(f.read()).decode()
+    st.markdown(
+        f"""
+        <h1 style="text-align: center; color: #1f2937; font-weight: 700;">
+            <img src="data:image/jpeg;base64,{chatbot_data}" width="60" style="vertical-align: middle; margin-right: 15px;">
+            SoR Q&A Bot
+        </h1>
+        """,
+        unsafe_allow_html=True
+    )
+else:
+    st.title("📊 SoR Q&A Bot")
+    
 st.markdown("Ask questions about store data from January to October 2025")
 
 # Sidebar with preset questions
