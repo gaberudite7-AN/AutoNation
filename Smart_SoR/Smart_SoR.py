@@ -50,7 +50,12 @@ def answer_question(question):
     if year_match:
         year = int(year_match.group(1))
         filtered = filtered[filtered['Year'].astype(int) == year]
-    
+
+    # Check if asking for brand  identification
+    asking_for_brand = any(phrase in question for phrase in ['what brand', 'which brand'])
+    # Check if asking for store identification
+    asking_for_store = any(phrase in question for phrase in ['what store', 'which store', 'what location'])
+
     # Filter by store if mentioned (but not for "what store" questions)
     store_found = None
     if 'what store' not in question and 'which store' not in question:
@@ -60,8 +65,15 @@ def answer_question(question):
                 store_found = store
                 break
     
-    # Check if asking for store identification
-    asking_for_store = any(phrase in question for phrase in ['what store', 'which store', 'what location'])
+
+    # Filter by brand if mentioned (but not for "what brand" questions)
+    brand_found = None
+    if 'what brand' not in question and 'which brand' not in question:
+        for brand in df['Brand'].unique():
+            if brand.lower() in question:
+                filtered = filtered[filtered['Brand'] == brand]
+                brand_found = brand
+                break
     
     # Determine operation - treat "total" as "sum"
     operation = 'sum'
@@ -128,6 +140,26 @@ def answer_question(question):
             
             store_name = filtered.loc[idx, 'Store Name']
             value = filtered.loc[idx, matched_column]
+            # Build descriptive response
+            filters = []
+            if month_found:
+                filters.append(month_found.capitalize())
+            if year_match:
+                filters.append(str(year_match.group(1)))
+            
+            filter_str = " in " + " ".join(filters) if filters else ""        
+            return f"{store_name} has the {operation} {matched_column}{filter_str}: {value:,.2f}", filtered
+
+        
+        # If asking for which store has max/min
+        elif asking_for_brand and operation in ['max', 'min']:
+            if operation == 'max':
+                idx = filtered[matched_column].idxmax()
+            else:  # min
+                idx = filtered[matched_column].idxmin()
+            
+            brand_name = filtered.loc[idx, 'Brand']
+            value = filtered.loc[idx, matched_column]
             
             # Build descriptive response
             filters = []
@@ -137,7 +169,7 @@ def answer_question(question):
                 filters.append(str(year_match.group(1)))
             
             filter_str = " in " + " ".join(filters) if filters else ""
-            return f"{store_name} has the {operation} {matched_column}{filter_str}: {value:,.2f}"
+            return f"{brand_name} has the {operation} {matched_column}{filter_str}: {value:,.2f}", filtered
         
         # Regular operation
         if operation == 'sum':
@@ -161,12 +193,12 @@ def answer_question(question):
             filters.append(store_found)
         
         filter_str = " - ".join(filters) if filters else "all data"
-        return f"{operation.capitalize()} of {matched_column} for {filter_str}: {result:,.2f}"
+        return f"{operation.capitalize()} of {matched_column} for {filter_str}: {result:,.2f}", filtered
     
-    return "Sorry, I couldn't understand that question. Try asking about specific columns like 'New Retail Units' or 'Used Total Deal Gross PVR'."
+    return "Sorry, I couldn't understand that question. Try asking about specific columns like 'New Retail Units' or 'Used Total Deal Gross PVR'.", df
 
 # Streamlit UI
-st.title("📊 Store Performance Q&A Bot")
+st.title("📊 SoR Q&A Bot")
 st.markdown("Ask questions about store data from January to October 2025")
 
 # Sidebar with preset questions
@@ -182,13 +214,15 @@ preset_questions = {
     "📉 Min Used Core PVR": "What is the minimum Used Core PVR?",
 }
 
-# Initialize session state for storing questions
+# Initialize session state for storing questions and filtered data
 if 'current_question' not in st.session_state:
     st.session_state.current_question = ""
+if 'filtered_data' not in st.session_state:
+    st.session_state.filtered_data = None
 
 # Preset question buttons in sidebar
 for label, question in preset_questions.items():
-    if st.sidebar.button(label, use_container_width=True):
+    if st.sidebar.button(label, width='content'):
         st.session_state.current_question = question
 
 st.sidebar.markdown("---")
@@ -212,14 +246,15 @@ with col1:
 
 with col2:
     st.markdown("<br>", unsafe_allow_html=True)
-    ask_button = st.button("Ask", type="primary", use_container_width=True)
+    ask_button = st.button("Ask", type="primary", width='content')
 
 # Process question - Modified to handle both button click and preset questions
 if (ask_button and user_question) or (st.session_state.current_question and not user_question):
     question_to_process = user_question if user_question else st.session_state.current_question
     
     with st.spinner("Analyzing..."):
-        answer = answer_question(question_to_process)
+        answer, filtered_df = answer_question(question_to_process)
+        st.session_state.filtered_data = filtered_df
         
         # Display answer in a nice format
         st.markdown("### Answer:")
@@ -232,53 +267,22 @@ if (ask_button and user_question) or (st.session_state.current_question and not 
         if st.session_state.current_question:
             st.session_state.current_question = ""
 
+# Display available columns
+with st.expander("📋 View Parameters"):
+    st.markdown("**Please utilize these fields in the query:**")
+    columns = df.columns.tolist()
+    st.write(", ".join(columns))
+
 # Display data preview
 with st.expander("📋 View Data Preview"):
-    st.dataframe(df.head(10), use_container_width=True)
-
-# Display available stores
-with st.expander("🏪 Available Stores"):
-    stores = sorted(df['Store Name'].unique())
-    st.write(", ".join(stores))
+    if st.session_state.filtered_data is not None:
+        st.markdown(f"**Showing filtered data ({len(st.session_state.filtered_data)} rows)**")
+        st.dataframe(st.session_state.filtered_data, width='stretch')
+    else:
+        st.markdown(f"**Showing preview of all data ({len(df)} rows) - Ask a question to see filtered results**")
+        st.dataframe(df.head(10), width='stretch')
 
 # Display available months
 with st.expander("📅 Available Months"):
     months = sorted(df['Month'].unique())
     st.write(", ".join(months))
-
-
-
-
-
-# def main():
-#     print("="*60)
-#     print("Welcome to the Store Performance Q&A Bot!")
-#     print("="*60)
-#     print("\nI can answer questions about your store data (Jan-Oct 2025)")
-#     print("\nExample questions:")
-#     print("- What is the total New Retail Units for October 2025?")
-#     print("- What store has the maximum New Base Retail PVR in September?")
-#     print("- What is the average Used Variable Gross for BMW of Carlsbad?")
-#     print("\nType 'exit', 'quit', or 'I have no further questions' to end.")
-#     print("="*60)
-    
-#     while True:
-#         user_input = input("\nYour question: ").strip()
-        
-#         # Check for exit conditions
-#         exit_phrases = ['exit', 'quit', 'no further questions', 'i have no further questions', 'done', 'bye']
-#         if any(phrase in user_input.lower() for phrase in exit_phrases):
-#             print("\nThank you for using the Store Performance Q&A Bot. Goodbye!")
-#             break
-        
-#         # Skip empty inputs
-#         if not user_input:
-#             print("Please ask a question.")
-#             continue
-        
-#         # Get and display answer
-#         answer = answer_question(user_input)
-#         print(f"\n{answer}")
-
-# if __name__ == "__main__":
-#     main()

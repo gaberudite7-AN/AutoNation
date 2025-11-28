@@ -220,7 +220,7 @@ def Update_Industry_UrbanScience():
         #shutil.copy(Industry_File, Archive_File)
 
         # Send a copy to W Drive
-        #shutil.copy(Industry_File, r'W:\Corporate\Inventory\Reporting\JDPower Industry vs AN\Urban_Industry_Data.xlsb')
+        shutil.copy(Industry_File, r'W:\Corporate\Inventory\Reporting\JDPower Industry vs AN\Urban_Industry_Data.xlsb')
 
     finally:
         cur.close()
